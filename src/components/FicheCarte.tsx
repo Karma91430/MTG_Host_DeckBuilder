@@ -43,10 +43,10 @@ export default function FicheCarte({
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 p-6"
          onClick={onFermer}>
-      <div className="w-full max-w-3xl rounded-xl border border-bordure bg-panneau shadow-2xl"
+      <div className="w-full max-w-5xl rounded-xl border border-bordure bg-panneau shadow-2xl"
            onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-start gap-5 p-5">
-          <div className="w-56 shrink-0 space-y-2">
+        <div className="flex items-start gap-6 p-6">
+          <div className="w-80 shrink-0 space-y-2">
             {image && (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={image} alt={c.name} className="w-full rounded-[4.75%] border border-bordure" />
@@ -66,7 +66,7 @@ export default function FicheCarte({
           <div className="min-w-0 flex-1 space-y-4">
             <div>
               <div className="flex items-start gap-3">
-                <h2 className="text-xl font-semibold">{recto?.name ?? c.name}</h2>
+                <h2 className="text-2xl font-semibold">{recto?.name ?? c.name}</h2>
                 <span className="ml-auto shrink-0 text-sm text-attenue">
                   {recto?.mana_cost ?? c.mana_cost}
                 </span>
@@ -80,7 +80,7 @@ export default function FicheCarte({
             </div>
 
             {(recto?.oracle_text ?? c.oracle_text) && (
-              <p className="whitespace-pre-line rounded-md border border-bordure bg-fond p-3 text-sm">
+              <p className="whitespace-pre-line rounded-md border border-bordure bg-fond p-4 text-[15px] leading-relaxed">
                 {recto?.oracle_text ?? c.oracle_text}
               </p>
             )}

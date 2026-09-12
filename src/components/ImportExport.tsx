@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import Modale from "./Modale";
 
 type Bilan = { ajoutees: number; introuvables: string[]; ignorees: string[] };
 
@@ -38,7 +39,7 @@ export default function ImportExport({ deckId }: { deckId: string }) {
 
   return (
     <>
-      <button onClick={() => setOuvert((v) => !v)}
+      <button onClick={() => setOuvert(true)}
               className="rounded-md border border-bordure px-3 py-2 text-sm">
         Importer
       </button>
@@ -48,8 +49,7 @@ export default function ImportExport({ deckId }: { deckId: string }) {
       </a>
 
       {ouvert && (
-        <div className="mt-3 w-full rounded-lg border border-bordure bg-panneau p-4">
-          <p className="mb-2 text-sm font-medium">Coller une liste</p>
+        <Modale titre="Importer une liste" onFermer={() => setOuvert(false)}>
           <p className="mb-2 text-xs text-attenue">
             Format « 1 Sol Ring », celui qu&apos;exportent Archidekt, Moxfield, MTGO et Arena.
             Les intitules <em>Commander</em>, <em>Sideboard</em> et <em>Maybeboard</em> sont
@@ -59,7 +59,7 @@ export default function ImportExport({ deckId }: { deckId: string }) {
           <textarea
             value={texte}
             onChange={(e) => setTexte(e.target.value)}
-            rows={10}
+            rows={12}
             placeholder={"Commander\n1 Atraxa, Praetors' Voice\n\nDeck\n1 Sol Ring\n10 Forest"}
             className="w-full font-mono text-xs"
           />
@@ -88,17 +88,13 @@ export default function ImportExport({ deckId }: { deckId: string }) {
             </div>
           )}
 
-          <div className="mt-3 flex gap-2">
+          <div className="mt-3">
             <button onClick={importer} disabled={occupe || !texte.trim()}
                     className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-texte disabled:opacity-50">
               {occupe ? "Import en cours..." : "Importer"}
             </button>
-            <button onClick={() => setOuvert(false)}
-                    className="rounded-md border border-bordure px-4 py-2 text-sm">
-              Fermer
-            </button>
           </div>
-        </div>
+        </Modale>
       )}
     </>
   );

@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import Modale from "./Modale";
 
 /** Rangement du deck : dossier et etiquettes, utiles des la dizaine de decks. */
 export default function ReglagesDeck({
@@ -26,12 +27,13 @@ export default function ReglagesDeck({
 
   return (
     <>
-      <button onClick={() => setOuvert((v) => !v)}
+      <button onClick={() => setOuvert(true)}
               className="rounded-md border border-bordure px-3 py-2 text-sm">
         Rangement
       </button>
       {ouvert && (
-        <div className="mt-3 w-full space-y-3 rounded-lg border border-bordure bg-panneau p-4">
+        <Modale titre="Rangement du deck" onFermer={() => setOuvert(false)} largeur="max-w-lg">
+          <div className="space-y-3">
           <label className="block space-y-1 text-sm">
             <span className="text-attenue">Dossier</span>
             <input value={d} onChange={(e) => setD(e.target.value)}
@@ -42,17 +44,12 @@ export default function ReglagesDeck({
             <input value={t} onChange={(e) => setT(e.target.value)}
                    placeholder="tokens, aristocrats, budget" className="w-full" />
           </label>
-          <div className="flex gap-2">
-            <button onClick={enregistrer} disabled={occupe}
-                    className="rounded-md bg-accent px-4 py-1.5 text-sm font-medium text-accent-texte disabled:opacity-50">
-              Enregistrer
-            </button>
-            <button onClick={() => setOuvert(false)}
-                    className="rounded-md border border-bordure px-4 py-1.5 text-sm">
-              Annuler
-            </button>
+          <button onClick={enregistrer} disabled={occupe}
+                  className="rounded-md bg-accent px-4 py-1.5 text-sm font-medium text-accent-texte disabled:opacity-50">
+            Enregistrer
+          </button>
           </div>
-        </div>
+        </Modale>
       )}
     </>
   );

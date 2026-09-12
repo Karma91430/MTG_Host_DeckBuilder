@@ -25,7 +25,7 @@ export default function TailleCartes() {
     const memorise = Number(localStorage.getItem(CLE));
     // Sur un grand ecran, la valeur par defaut parait etriquee : on l'ajuste
     // a la premiere visite, sans jamais ecraser un choix deja fait.
-    const initiale = memorise || (window.innerWidth > 2200 ? 170
+    const initiale = memorise || (window.innerWidth > 2200 ? 190
                                 : window.innerWidth < 1400 ? 108 : DEFAUT);
     setTaille(initiale);
     appliquerTaille(initiale);
@@ -40,9 +40,9 @@ export default function TailleCartes() {
   return (
     <label className="flex items-center gap-2 text-xs text-attenue" title="Taille des cartes">
       <span className="hidden sm:inline">Taille</span>
-      <input type="range" min={80} max={230} step={2} value={taille}
+      <input type="range" min={80} max={360} step={4} value={taille}
              onChange={(e) => changer(Number(e.target.value))}
-             className="w-24 accent-[var(--accent)]" />
+             className="w-32 accent-[var(--accent)]" />
     </label>
   );
 }

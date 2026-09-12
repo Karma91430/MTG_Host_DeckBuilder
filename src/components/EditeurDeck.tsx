@@ -150,7 +150,7 @@ export default function EditeurDeck({
         {rechercheOuverte && <RechercheCartes format={deck.format} onAjouter={ajouter} />}
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_17rem]">
+      <div className="space-y-6">
         <section className={occupe ? "opacity-60" : ""}>
           <ListeDeck entrees={entrees} onModifier={modifier} onSurvol={setApercu}
                      onOuvrir={setFiche} />
@@ -176,12 +176,7 @@ export default function EditeurDeck({
           )}
         </section>
 
-        <aside className="space-y-4">
-          {apercu && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={imageDe(apercu.carte, "normal") ?? ""} alt={apercu.carte.name}
-                 className="w-full rounded-[4.75%] border border-bordure" />
-          )}
+        <aside className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <Statistiques stats={stats} />
           <Acquisition entrees={entrees} />
           <MainDepart entrees={entrees} />
