@@ -53,3 +53,47 @@ export function surLesTours(
     return { tour, vues, chance: auMoins(taille, favorables, vues, 1) };
   });
 }
+
+/** Probabilite de tirer exactement k exemplaires, exposee pour les profils. */
+export function exactementK(taille: number, favorables: number, tirees: number, k: number): number {
+  return exactement(taille, favorables, Math.min(tirees, taille), k);
+}
+
+export type LigneProfil = {
+  nom: string; presentes: number; moyenne: number; auMoins1: number;
+};
+
+/**
+ * Portrait statistique d'une main de depart.
+ *
+ * Plutot que des chances isolees, on decrit la main type : combien de
+ * terrains, de creatures, de rampe en moyenne, et quelle probabilite d'en
+ * avoir au moins un de chaque.
+ */
+export function profilMain(
+  taille: number,
+  groupes: { nom: string; presentes: number }[],
+  mainDepart = 7,
+): LigneProfil[] {
+  if (taille <= 0) return [];
+  return groupes
+    .filter((g) => g.presentes > 0)
+    .map((g) => ({
+      nom: g.nom,
+      presentes: g.presentes,
+      // Esperance hypergeometrique : proportion x nombre de cartes tirees.
+      moyenne: (g.presentes / taille) * mainDepart,
+      auMoins1: auMoins(taille, g.presentes, mainDepart, 1),
+    }))
+    .sort((a, b) => b.moyenne - a.moyenne);
+}
+
+/** Repartition du nombre de terrains dans la main de depart. */
+export function repartitionTerrains(
+  taille: number, terrains: number, mainDepart = 7,
+): { k: number; chance: number }[] {
+  if (taille <= 0) return [];
+  return Array.from({ length: mainDepart + 1 }, (_, k) => ({
+    k, chance: exactementK(taille, terrains, mainDepart, k),
+  }));
+}

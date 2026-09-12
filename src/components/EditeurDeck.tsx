@@ -11,7 +11,7 @@ import Statistiques from "./Statistiques";
 import ListeDeck from "./ListeDeck";
 import ImportExport from "./ImportExport";
 import FicheCarte from "./FicheCarte";
-import Probabilites from "./Probabilites";
+import MainDepart from "./MainDepart";
 import Acquisition from "./Acquisition";
 import Paquets from "./Paquets";
 import ReglagesDeck from "./ReglagesDeck";
@@ -20,8 +20,9 @@ type Deck = { id: string; name: string; format: string; description: string;
               theme: string; folder: string; tags: string };
 
 export default function EditeurDeck({
-  deck, entrees, stats, problemes,
-}: { deck: Deck; entrees: EntreeResolue[]; stats: Stats; problemes: Probleme[] }) {
+  deck, entrees, stats, problemes, art,
+}: { deck: Deck; entrees: EntreeResolue[]; stats: Stats; problemes: Probleme[];
+     art: string | null }) {
   const router = useRouter();
   const [occupe, setOccupe] = useState(false);
   const [apercu, setApercu] = useState<EntreeResolue | null>(null);
@@ -81,38 +82,65 @@ export default function EditeurDeck({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center gap-3">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={symboleExtension(t.set)} alt="" width={28} height={28} className="symbole-extension" />
-        <div>
-          <h1 className="text-2xl font-semibold">{deck.name}</h1>
-          <p className="text-sm capitalize text-attenue">
-            {deck.format} · {stats.total} cartes
-            {stats.prix > 0 && ` · ~${stats.prix} €`}
-          </p>
+      <header className="relative -mx-8 -mt-6 mb-6 overflow-hidden border-b border-bordure">
+        {art && (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={art} alt="" className="absolute inset-0 h-full w-full object-cover" />
+            {/* Voile degrade : le bandeau doit rester lisible quelle que soit
+                l'illustration du commandant. */}
+            <div className="absolute inset-0"
+                 style={{ background: "linear-gradient(to right, var(--fond) 30%, transparent 90%)" }} />
+            <div className="absolute inset-0"
+                 style={{ background: "linear-gradient(to top, var(--fond) 5%, transparent 60%)" }} />
+          </>
+        )}
+        <div className={`relative flex flex-wrap items-end gap-4 px-8 ${art ? "py-8" : "py-5"}`}>
+          <div className="min-w-0">
+            <div className="mb-1 flex items-center gap-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={symboleExtension(t.set)} alt="" width={20} height={20}
+                   className="symbole-extension" />
+              <span className="text-xs uppercase tracking-wide text-accent">{t.nom}</span>
+            </div>
+            <h1 className="text-3xl font-semibold drop-shadow">{deck.name}</h1>
+            <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-attenue">
+              <span className="capitalize">{deck.format}</span>
+              <span>·</span>
+              <span>{stats.total} cartes</span>
+              {stats.prix > 0 && (<><span>·</span><span>~{stats.prix} €</span></>)}
+              <span>·</span>
+              <span className={erreurs.length === 0 ? "text-accent" : "text-red-400"}>
+                {erreurs.length === 0 ? "conforme" : `${erreurs.length} probleme${erreurs.length > 1 ? "s" : ""}`}
+              </span>
+            </p>
+          </div>
+
+          <div className="ml-auto flex flex-wrap items-center gap-2">
+            <select value={deck.theme} onChange={(e) => void changerTheme(e.target.value)}
+                    className="text-sm" title="Identite visuelle">
+              {THEMES.map((x) => <option key={x.id} value={x.id}>{x.nom}</option>)}
+            </select>
+            <span className="flex overflow-hidden rounded-md border border-bordure bg-panneau">
+              <button onClick={() => void historique("annuler")} disabled={!histo.peutAnnuler || occupe}
+                      title="Annuler" className="px-3 py-2 text-sm disabled:opacity-30">↶</button>
+              <button onClick={() => void historique("retablir")} disabled={!histo.peutRetablir || occupe}
+                      title="Retablir" className="border-l border-bordure px-3 py-2 text-sm disabled:opacity-30">↷</button>
+            </span>
+            <ImportExport deckId={deck.id} />
+            <Paquets deckId={deck.id}
+                     categories={[...new Set(entrees.map((e) => e.category).filter(Boolean))].sort()} />
+            <ReglagesDeck deckId={deck.id} folder={deck.folder} tags={deck.tags} />
+            <Link href={`/decks/${deck.id}/playtest`}
+                  className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-texte">
+              Tester
+            </Link>
+            <Link href="/" className="rounded-md border border-bordure bg-panneau px-3 py-2 text-sm">
+              Retour
+            </Link>
+          </div>
         </div>
-        <div className="ml-auto flex flex-wrap items-center gap-2">
-          <select value={deck.theme} onChange={(e) => void changerTheme(e.target.value)}
-                  className="text-sm" title="Identite visuelle">
-            {THEMES.map((x) => <option key={x.id} value={x.id}>{x.nom}</option>)}
-          </select>
-          <span className="flex overflow-hidden rounded-md border border-bordure">
-            <button onClick={() => void historique("annuler")} disabled={!histo.peutAnnuler || occupe}
-                    title="Annuler" className="px-3 py-2 text-sm disabled:opacity-30">↶</button>
-            <button onClick={() => void historique("retablir")} disabled={!histo.peutRetablir || occupe}
-                    title="Retablir" className="border-l border-bordure px-3 py-2 text-sm disabled:opacity-30">↷</button>
-          </span>
-          <ImportExport deckId={deck.id} />
-          <Paquets deckId={deck.id}
-                   categories={[...new Set(entrees.map((e) => e.category).filter(Boolean))].sort()} />
-          <ReglagesDeck deckId={deck.id} folder={deck.folder} tags={deck.tags} />
-          <Link href={`/decks/${deck.id}/playtest`}
-                className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-texte">
-            Tester
-          </Link>
-          <Link href="/" className="rounded-md border border-bordure px-3 py-2 text-sm">Retour</Link>
-        </div>
-      </div>
+      </header>
 
       <div className="grid gap-6 xl:grid-cols-[20rem_minmax(0,1fr)_17rem]">
         <section className="space-y-3">
@@ -153,7 +181,7 @@ export default function EditeurDeck({
           )}
           <Statistiques stats={stats} />
           <Acquisition entrees={entrees} />
-          <Probabilites entrees={entrees} />
+          <MainDepart entrees={entrees} />
           <div className="rounded-lg border border-bordure bg-panneau p-4">
             <p className="mb-2 text-sm font-medium">
               Legalite {erreurs.length === 0 && <span className="text-accent">· conforme</span>}

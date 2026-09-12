@@ -22,6 +22,11 @@ export default async function PageDeck({ params }: { params: Promise<{ id: strin
     .map((l) => ({ ...l, carte: donnees.get(l.card_id)! }))
     .filter((e) => e.carte);
 
+  const commandant = entrees.find((e) => e.zone === "command")?.carte;
+  const art = commandant?.image_uris?.art_crop
+    ?? commandant?.card_faces?.[0]?.image_uris?.art_crop
+    ?? null;
+
   return (
     <ThemeShell id={deck.theme} className="-mx-6 -my-8 min-h-screen bg-fond px-6 py-8">
       <EditeurDeck
@@ -31,6 +36,7 @@ export default async function PageDeck({ params }: { params: Promise<{ id: strin
         entrees={entrees}
         stats={statistiques(entrees)}
         problemes={problemes(deck.format, entrees)}
+        art={art}
       />
     </ThemeShell>
   );

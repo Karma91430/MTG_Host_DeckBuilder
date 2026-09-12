@@ -3,8 +3,10 @@
 /* Les couleurs viennent du theme actif, injecte en variables sur un conteneur.
    Les valeurs ci-dessous ne servent que si aucun theme n'est applique. */
 :root {
-  --fond: #0d1117; --panneau: #161b22; --bordure: #262d36;
-  --texte: #e6edf3; --attenue: #8b949e; --accent: #d98c3f; --accent-texte: #0d1117;
+  /* Valeurs de repli, alignees sur le theme Obsidienne : elles habillent le
+     document entier, la ou un theme de deck ne colore que son conteneur. */
+  --fond: #181d26; --panneau: #222933; --bordure: #38424f;
+  --texte: #e8eef5; --attenue: #9aa7b6; --accent: #e09a4f; --accent-texte: #181d26;
 }
 
 @theme inline {

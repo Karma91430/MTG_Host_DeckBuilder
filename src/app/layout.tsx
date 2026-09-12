@@ -12,7 +12,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="fr">
       <body className="min-h-screen">
         <header className="border-b border-bordure bg-panneau">
-          <div className="mx-auto flex max-w-[110rem] items-center gap-6 px-6 py-3">
+          <div className="mx-auto flex w-full max-w-none items-center gap-6 px-6 py-3">
             <Link href="/" className="text-lg font-semibold tracking-tight">
               Deck<span className="text-accent">builder</span>
             </Link>
@@ -24,7 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </span>
           </div>
         </header>
-        <main className="mx-auto max-w-[110rem] px-6 py-6">{children}</main>
+        <main className="mx-auto w-full max-w-none px-8 py-6">{children}</main>
       </body>
     </html>
   );

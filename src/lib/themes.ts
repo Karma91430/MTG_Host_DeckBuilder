@@ -24,43 +24,43 @@ export type Theme = {
 export const THEMES: Theme[] = [
   {
     id: "obsidian", nom: "Obsidienne", set: "mh3", ambiance: "Neutre et sombre, par defaut",
-    couleurs: { fond: "#0d1117", panneau: "#161b22", bordure: "#262d36",
-                texte: "#e6edf3", attenue: "#8b949e", accent: "#d98c3f", accentTexte: "#0d1117" },
+    couleurs: { fond: "#181d26", panneau: "#222933", bordure: "#38424f",
+                texte: "#e8eef5", attenue: "#9aa7b6", accent: "#e09a4f", accentTexte: "#181d26" },
   },
   {
     id: "foret", nom: "Canopee", set: "blb", ambiance: "Verts profonds, bois et mousse",
-    couleurs: { fond: "#0f1710", panneau: "#17211a", bordure: "#26362a",
-                texte: "#e8f0e6", attenue: "#8fa78f", accent: "#7bbf5a", accentTexte: "#0f1710" },
+    couleurs: { fond: "#18211a", panneau: "#212d24", bordure: "#354736",
+                texte: "#e9f2e7", attenue: "#9db69d", accent: "#86c95f", accentTexte: "#18211a" },
   },
   {
     id: "abysse", nom: "Abysse", set: "lci", ambiance: "Bleus marins et or immerge",
-    couleurs: { fond: "#081420", panneau: "#0f1e2d", bordure: "#1c3145",
-                texte: "#e3eef7", attenue: "#85a2ba", accent: "#e0b155", accentTexte: "#081420" },
+    couleurs: { fond: "#111f2d", panneau: "#1a2c3d", bordure: "#2a4459",
+                texte: "#e6f0f8", attenue: "#93aec5", accent: "#e8bc63", accentTexte: "#111f2d" },
   },
   {
     id: "forge", nom: "Forge", set: "one", ambiance: "Metal chauffe et braises",
-    couleurs: { fond: "#17100c", panneau: "#221812", bordure: "#3a271c",
-                texte: "#f3e7dd", attenue: "#b09383", accent: "#e2612e", accentTexte: "#17100c" },
+    couleurs: { fond: "#211711", panneau: "#2d2019", bordure: "#443026",
+                texte: "#f5ebe2", attenue: "#bf9f8d", accent: "#e86f3a", accentTexte: "#211711" },
   },
   {
     id: "sepulcre", nom: "Sepulcre", set: "dsk", ambiance: "Violets funebres et brume",
-    couleurs: { fond: "#120e18", panneau: "#1b1524", bordure: "#2e2340",
-                texte: "#ece6f5", attenue: "#9d8fb4", accent: "#a674e0", accentTexte: "#120e18" },
+    couleurs: { fond: "#1a1524", panneau: "#241d31", bordure: "#3a2d4e",
+                texte: "#efe9f7", attenue: "#a99bc0", accent: "#b183e8", accentTexte: "#1a1524" },
   },
   {
     id: "steppe", nom: "Steppe", set: "tdm", ambiance: "Ocres, cuir et poussiere",
-    couleurs: { fond: "#16120c", panneau: "#201a12", bordure: "#362c1f",
-                texte: "#f2eade", attenue: "#b3a58a", accent: "#d9a441", accentTexte: "#16120c" },
+    couleurs: { fond: "#201a12", panneau: "#2b231a", bordure: "#413527",
+                texte: "#f4ede1", attenue: "#bcaa8e", accent: "#e0ab48", accentTexte: "#201a12" },
   },
   {
     id: "orbite", nom: "Orbite", set: "eoe", ambiance: "Noir spatial et cyan froid",
-    couleurs: { fond: "#070b12", panneau: "#0e141f", bordure: "#1b2637",
-                texte: "#e4edf7", attenue: "#7f93ad", accent: "#4fd1d9", accentTexte: "#070b12" },
+    couleurs: { fond: "#0e1520", panneau: "#16202e", bordure: "#243449",
+                texte: "#e7f0fa", attenue: "#8ba1bb", accent: "#57d8e0", accentTexte: "#0e1520" },
   },
   {
     id: "parchemin", nom: "Parchemin", set: "dmu", ambiance: "Clair, encre sur papier",
-    couleurs: { fond: "#f5f1e8", panneau: "#ffffff", bordure: "#ddd5c4",
-                texte: "#2b2620", attenue: "#7a7263", accent: "#9a5b2c", accentTexte: "#ffffff" },
+    couleurs: { fond: "#efe9dc", panneau: "#fbf8f2", bordure: "#d6cdb9",
+                texte: "#2a251f", attenue: "#756d5e", accent: "#a0602f", accentTexte: "#ffffff" },
   },
 ];
 
