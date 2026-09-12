@@ -76,7 +76,7 @@ export default function EditeurDeck({
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[21rem_1fr_16rem]">
+      <div className="grid gap-6 xl:grid-cols-[20rem_minmax(0,1fr)_17rem]">
         <section className="space-y-3">
           <h2 className="text-sm font-medium">Ajouter des cartes</h2>
           <RechercheCartes onAjouter={ajouter} />
