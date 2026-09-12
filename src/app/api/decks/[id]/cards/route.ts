@@ -21,6 +21,12 @@ export async function POST(req: Request, { params }: Ctx) {
 
   const zone = body.zone ?? "main";
   const qte = body.quantity ?? 1;
+
+  // Une carte appartient a une seule zone : sans cette regle, un commandant
+  // ajoute ensuite au deck apparaissait dans deux sections et etait compte
+  // deux fois dans les statistiques.
+  db().prepare("DELETE FROM deck_cards WHERE deck_id = ? AND card_id = ? AND zone != ?")
+      .run(id, body.cardId, zone);
   const existante = db().prepare(
     "SELECT * FROM deck_cards WHERE deck_id = ? AND card_id = ? AND zone = ?",
   ).get(id, body.cardId, zone) as { id: string; quantity: number } | undefined;
@@ -51,6 +57,26 @@ export async function PATCH(req: Request, { params }: Ctx) {
     db().prepare("DELETE FROM deck_cards WHERE id = ? AND deck_id = ?").run(body.entryId, id);
     toucher(id);
     return NextResponse.json({ ok: true, supprimee: true });
+  }
+
+  // Changer de zone peut heurter une entree existante dans la zone visee :
+  // on fusionne les quantites plutot que de violer la contrainte d'unicite.
+  if (body.zone !== undefined) {
+    const courante = db().prepare("SELECT * FROM deck_cards WHERE id = ? AND deck_id = ?")
+      .get(body.entryId, id) as { card_id: string; quantity: number } | undefined;
+    if (courante) {
+      const cible = db().prepare(
+        "SELECT * FROM deck_cards WHERE deck_id = ? AND card_id = ? AND zone = ? AND id != ?",
+      ).get(id, courante.card_id, body.zone, body.entryId) as
+        { id: string; quantity: number } | undefined;
+      if (cible) {
+        db().prepare("UPDATE deck_cards SET quantity = ? WHERE id = ?")
+            .run(cible.quantity + courante.quantity, cible.id);
+        db().prepare("DELETE FROM deck_cards WHERE id = ?").run(body.entryId);
+        toucher(id);
+        return NextResponse.json({ ok: true, fusionnee: true });
+      }
+    }
   }
 
   const champs: string[] = [];

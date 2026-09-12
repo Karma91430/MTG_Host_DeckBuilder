@@ -9,6 +9,9 @@ export type CarteJeu = {
   x?: number; y?: number;
   marqueurs?: number;
   jeton?: boolean;
+  /** Vrai si la carte a ete posee a la main : la mise en place automatique
+      ne doit plus la deplacer. */
+  manuelle?: boolean;
 };
 
 type Zone = "bibliotheque" | "main" | "terrain" | "cimetiere" | "exil" | "commandement";
@@ -29,6 +32,29 @@ function melanger<T>(liste: T[]): T[] {
 }
 
 const estTerrain = (c: CarteJeu) => /land|terrain/i.test(c.typeLigne);
+const estPermanent = (c: CarteJeu) =>
+  !/instant|sorcery|ephemere|rituel/i.test(c.typeLigne);
+
+/** Cartes alignees par rangee avant de passer a la suivante. */
+const PAR_RANGEE = 9;
+
+/**
+ * Place une carte automatiquement sur le champ de bataille.
+ *
+ * Les terrains s'alignent en bas, le reste au-dessus : c'est la disposition
+ * qu'on adopte spontanement sur une vraie table. Les cartes deja deplacees a
+ * la main sont ignorees dans le comptage, pour qu'elles ne decalent rien.
+ */
+function positionAuto(carte: CarteJeu, presentes: CarteJeu[]) {
+  const terrain = estTerrain(carte);
+  const rang = presentes.filter((c) => !c.manuelle && estTerrain(c) === terrain).length;
+  const colonne = rang % PAR_RANGEE;
+  const ligne = Math.floor(rang / PAR_RANGEE);
+  return {
+    x: 2 + colonne * 10.6,
+    y: terrain ? 52 + ligne * 16 : 4 + ligne * 16,
+  };
+}
 
 export default function Playtest({
   bibliotheque: depart, commandants,
@@ -63,7 +89,8 @@ export default function Playtest({
     return null;
   };
 
-  const deplacer = useCallback((uid: string, vers: Zone, pos?: { x: number; y: number }) => {
+  const deplacer = useCallback((uid: string, vers: Zone,
+                               pos?: { x: number; y: number }, manuelle = false) => {
     setZones((z) => {
       const suivant = { ...z };
       const carte = extraire(suivant, uid);
@@ -74,7 +101,7 @@ export default function Playtest({
         ...carte,
         engagee: vers === "terrain" ? carte.engagee : false,
         marqueurs: vers === "terrain" ? carte.marqueurs : 0,
-        x: pos?.x, y: pos?.y,
+        x: pos?.x, y: pos?.y, manuelle: pos ? manuelle : undefined,
       };
       suivant[vers] = vers === "bibliotheque"
         ? [...suivant[vers], propre]      // repose sous la bibliotheque
@@ -82,6 +109,26 @@ export default function Playtest({
       return suivant;
     });
     setMenu(null);
+  }, []);
+
+  /**
+   * Joue une carte de la main : les permanents rejoignent le champ de bataille
+   * a une place calculee, les ephemeres et rituels partent au cimetiere comme
+   * ils le feraient apres resolution.
+   */
+  const jouer = useCallback((uid: string) => {
+    setZones((z) => {
+      const suivant = { ...z };
+      const carte = extraire(suivant, uid);
+      if (!carte) return z;
+      if (!estPermanent(carte)) {
+        suivant.cimetiere = [{ ...carte, engagee: false }, ...suivant.cimetiere];
+        return suivant;
+      }
+      const pos = positionAuto(carte, suivant.terrain);
+      suivant.terrain = [{ ...carte, ...pos, manuelle: false }, ...suivant.terrain];
+      return suivant;
+    });
   }, []);
 
   const piocher = useCallback((n = 1) => {
@@ -174,7 +221,7 @@ export default function Playtest({
     deplacer(uid, "terrain", {
       x: Math.min(94, Math.max(0, ((e.clientX - r.left) / r.width) * 100)),
       y: Math.min(86, Math.max(0, ((e.clientY - r.top) / r.height) * 100)),
-    });
+    }, true);
   }
 
   return (
@@ -190,26 +237,60 @@ export default function Playtest({
           {zones.bibliotheque.length} en bibliotheque · {zones.main.length} en main · {terrains} terrains
         </span>
 
-        <div className="ml-auto flex flex-wrap gap-1.5">
-          <button className={bouton} onClick={() => piocher(1)}>Piocher <kbd className="text-attenue">D</kbd></button>
-          <button className={bouton} onClick={tourSuivant}>Tour <kbd className="text-attenue">N</kbd></button>
-          <button className={bouton} onClick={degagerTout}>Degager <kbd className="text-attenue">U</kbd></button>
-          <button className={bouton} onClick={creerJeton}>Jeton <kbd className="text-attenue">T</kbd></button>
-          <button className={bouton}
-                  onClick={() => setPanneau({ titre: "Bibliotheque", cartes: zones.bibliotheque })}>
-            Chercher
-          </button>
-          <button className={bouton} onClick={() => meuler(1)}>Meuler</button>
-          <button className={bouton}
-                  onClick={() => { nouvelleMain(7); setMulligans(0); noter("nouvelle partie"); }}>
-            Nouvelle main
-          </button>
-          <button className={bouton}
-                  onClick={() => { nouvelleMain(7); setMulligans((m) => m + 1); noter("mulligan"); }}>
-            Mulligan {mulligans > 0 && `(${mulligans})`}
-          </button>
+        <div className="ml-auto flex flex-wrap items-center gap-3">
+          <Groupe titre="Tour">
+            <button className={bouton} onClick={() => piocher(1)} title="Piocher une carte (D)">
+              Piocher <kbd className="opacity-50">D</kbd>
+            </button>
+            <button className={bouton} onClick={tourSuivant}
+                    title="Degage tout, avance d'un tour et pioche (N)">
+              Tour suivant <kbd className="opacity-50">N</kbd>
+            </button>
+            <button className={bouton} onClick={degagerTout} title="Degager tous les permanents (U)">
+              Degager <kbd className="opacity-50">U</kbd>
+            </button>
+          </Groupe>
+
+          <Groupe titre="Bibliotheque">
+            <button className={bouton}
+                    onClick={() => { setZones((z) => ({ ...z, bibliotheque: melanger(z.bibliotheque) }));
+                                     noter("melange"); }}
+                    title="Melanger la bibliotheque (S)">
+              Melanger <kbd className="opacity-50">S</kbd>
+            </button>
+            <button className={bouton}
+                    onClick={() => setPanneau({ titre: "Bibliotheque", cartes: zones.bibliotheque })}
+                    title="Parcourir la bibliotheque et prendre une carte">
+              Chercher
+            </button>
+            <button className={bouton} onClick={() => meuler(1)}
+                    title="Mettre la carte du dessus au cimetiere">
+              Meuler
+            </button>
+          </Groupe>
+
+          <Groupe titre="Partie">
+            <button className={bouton} onClick={creerJeton} title="Creer un jeton (T)">
+              Jeton <kbd className="opacity-50">T</kbd>
+            </button>
+            <button className={bouton}
+                    onClick={() => { nouvelleMain(7); setMulligans(0); noter("nouvelle partie"); }}
+                    title="Tout remelanger et repiocher sept cartes">
+              Nouvelle main
+            </button>
+            <button className={bouton}
+                    onClick={() => { nouvelleMain(7); setMulligans((m) => m + 1); noter("mulligan"); }}
+                    title="Remelanger et repiocher, une carte de plus a rendre (M)">
+              Mulligan {mulligans > 0 && `(${mulligans})`}
+            </button>
+          </Groupe>
         </div>
       </div>
+
+      <p className="text-[11px] text-attenue">
+        Clic sur une carte en main pour la jouer · glisser pour la placer soi-meme ·
+        clic sur un permanent pour l&apos;engager · clic droit pour le menu complet
+      </p>
 
       {mulligans > 0 && (
         <p className="text-xs text-attenue">
@@ -260,6 +341,8 @@ export default function Playtest({
                   <li key={c.uid} draggable
                       onDragStart={(e) => e.dataTransfer.setData("text/plain", c.uid)}
                       onMouseEnter={() => setSurvol(c)}
+                      onClick={() => jouer(c.uid)}
+                      title="Cliquer pour jouer, ou faire glisser pour placer soi-meme"
                       onContextMenu={(e) => { e.preventDefault();
                                               setMenu({ uid: c.uid, zone: "main", x: e.clientX, y: e.clientY }); }}
                       className="-ml-8 cursor-grab transition-transform duration-150 first:ml-0
@@ -325,6 +408,16 @@ export default function Playtest({
                      onPrendre={(uid) => { deplacer(uid, "main"); setPanneau(null); }}
                      onFermer={() => setPanneau(null)} />
       )}
+    </div>
+  );
+}
+
+/** Groupe de commandes, avec son intitule au-dessus. */
+function Groupe({ titre, children }: { titre: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span className="px-0.5 text-[10px] uppercase tracking-wide text-attenue">{titre}</span>
+      <div className="flex gap-1">{children}</div>
     </div>
   );
 }

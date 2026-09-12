@@ -172,7 +172,7 @@ export default function ListeDeck({
                 {liste.map((e) => (
                   <li key={e.id} className="group relative" onMouseEnter={() => onSurvol(e)}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={imageDe(e.carte, "small") ?? ""} alt={e.carte.name} loading="lazy"
+                    <img src={imageDe(e.carte, "normal") ?? ""} alt={e.carte.name} loading="lazy"
                          onClick={() => onOuvrir(e)}
                          className="w-full cursor-pointer rounded-[4.75%] border border-bordure shadow-lg
                                     transition group-hover:-translate-y-1 group-hover:border-accent" />
