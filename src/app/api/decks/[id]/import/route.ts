@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db, newId, type DeckCardRow } from "@/lib/db";
 import { parNoms } from "@/lib/scryfall";
 import { lireListe } from "@/lib/decklist";
+import { memoriser } from "@/lib/historique";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   }
 
   const { trouvees, introuvables } = await parNoms([...new Set(lignes.map((l) => l.nom))]);
+
+  memoriser(id);
 
   const ecrire = db().transaction(() => {
     if (body.remplacer) db().prepare("DELETE FROM deck_cards WHERE deck_id = ?").run(id);

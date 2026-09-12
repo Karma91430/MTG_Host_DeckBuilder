@@ -16,11 +16,12 @@ import { imageDe } from "@/lib/carte";
 const BANDE = 42;
 
 export default function ColonnesDeck({
-  groupes, onModifier, onSurvol,
+  groupes, onModifier, onSurvol, onOuvrir,
 }: {
   groupes: [string, EntreeResolue[]][];
   onModifier: (entryId: string, champs: Record<string, unknown>) => void;
   onSurvol: (e: EntreeResolue | null) => void;
+  onOuvrir: (e: EntreeResolue) => void;
 }) {
   return (
     <div className="flex gap-4 overflow-x-auto pb-4">
@@ -50,7 +51,8 @@ export default function ColonnesDeck({
                     src={imageDe(e.carte, "normal") ?? ""}
                     alt={e.carte.name}
                     loading="lazy"
-                    className="w-full rounded-[4.75%] border border-bordure shadow-xl
+                    onClick={() => onOuvrir(e)}
+                    className="w-full cursor-pointer rounded-[4.75%] border border-bordure shadow-xl
                                group-hover:border-accent"
                   />
                   {e.quantity > 1 && (

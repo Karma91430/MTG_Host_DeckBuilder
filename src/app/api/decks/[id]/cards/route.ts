@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db, newId } from "@/lib/db";
+import { memoriser } from "@/lib/historique";
 
 export const dynamic = "force-dynamic";
 type Ctx = { params: Promise<{ id: string }> };
@@ -15,6 +16,8 @@ export async function POST(req: Request, { params }: Ctx) {
   const body = (await req.json()) as
     { cardId?: string; quantity?: number; zone?: string; category?: string };
   if (!body.cardId) return NextResponse.json({ error: "Carte manquante" }, { status: 400 });
+
+  memoriser(id);
 
   const zone = body.zone ?? "main";
   const qte = body.quantity ?? 1;
@@ -39,8 +42,10 @@ export async function POST(req: Request, { params }: Ctx) {
 export async function PATCH(req: Request, { params }: Ctx) {
   const { id } = await params;
   const body = (await req.json()) as
-    { entryId?: string; quantity?: number; zone?: string; category?: string };
+    { entryId?: string; quantity?: number; zone?: string; category?: string; owned?: string };
   if (!body.entryId) return NextResponse.json({ error: "Entree manquante" }, { status: 400 });
+
+  memoriser(id);
 
   if (body.quantity !== undefined && body.quantity <= 0) {
     db().prepare("DELETE FROM deck_cards WHERE id = ? AND deck_id = ?").run(body.entryId, id);
@@ -53,6 +58,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
   if (body.quantity !== undefined) { champs.push("quantity = ?"); args.push(body.quantity); }
   if (body.zone !== undefined) { champs.push("zone = ?"); args.push(body.zone); }
   if (body.category !== undefined) { champs.push("category = ?"); args.push(body.category); }
+  if (body.owned !== undefined) { champs.push("owned = ?"); args.push(body.owned); }
   if (champs.length === 0) return NextResponse.json({ ok: true });
 
   db().prepare(`UPDATE deck_cards SET ${champs.join(", ")} WHERE id = ? AND deck_id = ?`)

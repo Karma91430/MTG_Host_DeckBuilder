@@ -6,6 +6,9 @@
 
 import type { Carte } from "./carte";
 
+/** Etats d'acquisition d'une carte, pour savoir ce qu'il reste a acheter. */
+export const ACQUISITION = ["have", "getting", "none"] as const;
+
 /** Roles habituels d'une carte dans un deck, proposes a la saisie. */
 export const CATEGORIES = [
   "Rampe", "Fixation", "Pioche", "Tuteur", "Removal cible", "Removal de masse",

@@ -14,17 +14,25 @@ const ORDRE_TYPES = ["Commandant", "Creatures", "Planeswalkers", "Ephemeres", "R
 const SANS = "Sans categorie";
 
 export default function ListeDeck({
-  entrees, onModifier, onSurvol,
+  entrees, onModifier, onSurvol, onOuvrir,
 }: {
   entrees: EntreeResolue[];
   onModifier: (entryId: string, champs: Record<string, unknown>) => void;
   onSurvol: (e: EntreeResolue | null) => void;
+  onOuvrir: (e: EntreeResolue) => void;
 }) {
   const [affichage, setAffichage] = useState<Affichage>("colonnes");
   const [groupement, setGroupement] = useState<Groupement>("type");
   const [edite, setEdite] = useState<string | null>(null);
   const [filtreTexte, setFiltreTexte] = useState("");
   const [filtreSousType, setFiltreSousType] = useState("");
+  const [horsIdentite, setHorsIdentite] = useState(false);
+
+  // Identite couleur du commandant : sert au filtre des cartes non jouables.
+  const identite = useMemo(() => {
+    const c = entrees.filter((e) => e.zone === "command");
+    return c.length ? new Set(c.flatMap((e) => e.carte.color_identity ?? [])) : null;
+  }, [entrees]);
 
   const categoriesConnues = useMemo(() => {
     const utilisees = entrees.map((e) => e.category).filter(Boolean);
@@ -48,9 +56,13 @@ export default function ListeDeck({
       if (q && !e.carte.name.toLowerCase().includes(q)
             && !(e.carte.type_line ?? "").toLowerCase().includes(q)) return false;
       if (filtreSousType && !sousTypes(e.carte).includes(filtreSousType)) return false;
+      if (horsIdentite) {
+        if (!identite) return false;
+        if (!(e.carte.color_identity ?? []).some((s) => !identite.has(s))) return false;
+      }
       return true;
     });
-  }, [entrees, filtreTexte, filtreSousType]);
+  }, [entrees, filtreTexte, filtreSousType, horsIdentite, identite]);
 
   const groupes = useMemo(() => {
     const g = new Map<string, EntreeResolue[]>();
@@ -75,7 +87,7 @@ export default function ListeDeck({
   }, [filtrees, groupement]);
 
   const total = filtrees.reduce((s, e) => s + e.quantity, 0);
-  const filtreActif = Boolean(filtreTexte || filtreSousType);
+  const filtreActif = Boolean(filtreTexte || filtreSousType || horsIdentite);
 
   const onglet = (actif: boolean) =>
     `rounded-md px-3 py-1.5 text-sm transition ${
@@ -105,10 +117,17 @@ export default function ListeDeck({
               <option key={st} value={st}>{st} ({n})</option>
             ))}
           </select>
+          {identite && (
+            <button onClick={() => setHorsIdentite((v) => !v)}
+                    className={onglet(horsIdentite)}
+                    title="Cartes qui sortent de l'identite couleur du commandant">
+              Hors identite
+            </button>
+          )}
           {filtreActif && (
             <>
               <span className="text-sm text-attenue">{total} carte{total > 1 ? "s" : ""}</span>
-              <button onClick={() => { setFiltreTexte(""); setFiltreSousType(""); }}
+              <button onClick={() => { setFiltreTexte(""); setFiltreSousType(""); setHorsIdentite(false); }}
                       className="text-sm text-accent hover:underline">
                 effacer
               </button>
@@ -129,7 +148,7 @@ export default function ListeDeck({
       </div>
 
       {groupes.length > 0 && affichage === "colonnes" && (
-        <ColonnesDeck groupes={groupes} onModifier={onModifier} onSurvol={onSurvol} />
+        <ColonnesDeck groupes={groupes} onModifier={onModifier} onSurvol={onSurvol} onOuvrir={onOuvrir} />
       )}
 
       {groupes.length === 0 ? (
@@ -153,11 +172,18 @@ export default function ListeDeck({
                   <li key={e.id} className="group relative" onMouseEnter={() => onSurvol(e)}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={imageDe(e.carte, "normal") ?? ""} alt={e.carte.name} loading="lazy"
-                         className="w-full rounded-[4.75%] border border-bordure shadow-lg transition
-                                    group-hover:-translate-y-1 group-hover:border-accent" />
+                         onClick={() => onOuvrir(e)}
+                         className="w-full cursor-pointer rounded-[4.75%] border border-bordure shadow-lg
+                                    transition group-hover:-translate-y-1 group-hover:border-accent" />
                     {e.quantity > 1 && (
                       <span className="absolute left-2 top-2 rounded-md bg-black/85 px-2 py-0.5 text-sm font-semibold text-white">
                         {e.quantity}
+                      </span>
+                    )}
+                    {(e.owned ?? "none") !== "have" && (
+                      <span className="absolute bottom-2 left-2 rounded bg-black/85 px-1.5 py-0.5 text-[10px] text-white"
+                            title={e.owned === "getting" ? "A acheter" : "Manquante"}>
+                        {e.owned === "getting" ? "achat" : "manque"}
                       </span>
                     )}
                     {e.category && (
@@ -181,8 +207,8 @@ export default function ListeDeck({
                   <li key={e.id} className="flex items-center gap-3 px-4 py-2.5"
                       onMouseEnter={() => onSurvol(e)}>
                     <span className="w-7 shrink-0 text-right text-attenue">{e.quantity}</span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate">{e.carte.name}</span>
+                    <span className="min-w-0 flex-1 cursor-pointer" onClick={() => onOuvrir(e)}>
+                      <span className="block truncate hover:text-accent">{e.carte.name}</span>
                       <span className="block truncate text-xs text-attenue">{e.carte.type_line}</span>
                     </span>
 

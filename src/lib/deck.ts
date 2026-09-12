@@ -1,6 +1,7 @@
 import type { Carte } from "./carte";
 
-export type Entree = { id: string; card_id: string; quantity: number; zone: string; category: string };
+export type Entree = { id: string; card_id: string; quantity: number; zone: string;
+                       category: string; owned: string };
 export type EntreeResolue = Entree & { carte: Carte };
 
 /** Tailles attendues par format, pour signaler un deck incomplet. */
