@@ -12,7 +12,7 @@ import ListeDeck from "./ListeDeck";
 import ImportExport from "./ImportExport";
 import FicheCarte from "./FicheCarte";
 import MainDepart from "./MainDepart";
-import Acquisition from "./Acquisition";
+import EtatDeck from "./EtatDeck";
 import TailleCartes from "./TailleCartes";
 import ReglagesDeck from "./ReglagesDeck";
 
@@ -160,15 +160,24 @@ export default function EditeurDeck({
               <h3 className="mb-1 text-sm font-medium">
                 A voir <span className="ml-2 text-attenue">{aVoir.length}</span>
               </h3>
-              <ul className="divide-y divide-bordure overflow-hidden rounded-lg border border-bordure bg-panneau">
+              <ul className="grid gap-2"
+                  style={{ gridTemplateColumns: "repeat(auto-fill, minmax(var(--carte-l), 1fr))" }}>
                 {aVoir.map((e) => (
-                  <li key={e.id} className="flex items-center gap-2 px-3 py-1.5 text-sm"
-                      onMouseEnter={() => setApercu(e)}>
-                    <span className="min-w-0 flex-1 truncate text-attenue">{e.carte.name}</span>
-                    <button onClick={() => void modifier(e.id, { zone: "main" })}
-                            className="text-xs text-accent">vers le deck</button>
-                    <button onClick={() => void modifier(e.id, { quantity: 0 })}
-                            className="px-1 text-attenue hover:text-red-400">×</button>
+                  <li key={e.id} className="group relative">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={imageDe(e.carte, "normal") ?? ""} alt={e.carte.name} loading="lazy"
+                         onClick={() => setFiche(e)}
+                         className="w-full cursor-pointer rounded-[4.75%] border border-bordure opacity-75
+                                    transition group-hover:opacity-100" />
+                    <div className="absolute inset-x-0 bottom-0 flex justify-center gap-2 rounded-b-[4.75%]
+                                    bg-black/80 py-1.5 opacity-0 transition group-hover:opacity-100">
+                      <button onClick={() => void modifier(e.id, { zone: "main" })}
+                              className="rounded bg-accent px-2 py-0.5 text-[11px] font-medium text-accent-texte">
+                        vers le deck
+                      </button>
+                      <button onClick={() => void modifier(e.id, { quantity: 0 })}
+                              className="px-1.5 text-sm text-white hover:text-red-400">×</button>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -176,26 +185,10 @@ export default function EditeurDeck({
           )}
         </section>
 
-        <aside className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <aside className="grid gap-4 lg:grid-cols-3">
           <Statistiques stats={stats} />
-          <Acquisition entrees={entrees} />
+          <EtatDeck entrees={entrees} problemes={problemes} />
           <MainDepart entrees={entrees} />
-          <div className="rounded-lg border border-bordure bg-panneau p-4">
-            <p className="mb-2 text-sm font-medium">
-              Legalite {erreurs.length === 0 && <span className="text-accent">· conforme</span>}
-            </p>
-            {problemes.length === 0 ? (
-              <p className="text-sm text-attenue">Aucun probleme detecte.</p>
-            ) : (
-              <ul className="max-h-56 space-y-1 overflow-y-auto text-xs">
-                {problemes.map((p, i) => (
-                  <li key={i} className={p.gravite === "erreur" ? "text-red-400" : "text-attenue"}>
-                    {p.texte}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
         </aside>
       </div>
 
