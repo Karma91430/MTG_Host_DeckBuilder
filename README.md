@@ -55,7 +55,13 @@ sans avoir a saisir toute sa collection.
 
 ### Playtest
 
-Table de jeu en pleine largeur et pleine hauteur. La bibliotheque est une pile
+Table de jeu posee en plein ecran : elle recouvre l en-tete du site et tient
+dans la fenetre, sans aucune barre de defilement, quelle que soit la taille de
+l ecran. La main se deploie en un seul eventail dont le chevauchement se calcule
+d apres la place reellement disponible : dix-neuf cartes tiennent encore, meme
+avec le curseur de taille au maximum.
+
+La bibliotheque est une pile
 posee en bas a gauche : un clic pioche, un clic droit l ouvre pour la parcourir.
 Cimetiere, exil et zone de commandement sont des piles voisines qui acceptent
 qu on y fasse glisser une carte.
@@ -84,9 +90,15 @@ d interrompre l import.
 
 ### Rangement
 
-Dossiers et etiquettes. Un rail presente les dossiers en cibles de depot : on
-fait glisser une vignette de deck pour l y ranger. Creation a la volee,
-suppression qui libere les decks. Filtres par nom, dossier, format et etiquette.
+Dossiers et etiquettes. Deux boutons ouvrent l ecran : « Nouveau deck » et
+« + Nouveau dossier ». Les decks sont groupes par dossier sous un intitule de
+section qui est lui-meme une cible de depot, et un rail de pastilles offre les
+memes cibles en haut de page : on fait glisser une vignette de deck sur l une ou
+l autre pour l y ranger. Creation a la volee, suppression qui libere les decks.
+Filtres par nom, dossier, format et etiquette.
+
+Chaque vignette porte un menu `⋯` qui donne, sans ouvrir le deck : dossier et
+etiquettes, renommage, choix de l identite visuelle, suppression.
 
 ### Identite visuelle
 

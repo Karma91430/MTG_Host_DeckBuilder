@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { theme, symboleExtension } from "@/lib/themes";
+import { THEMES, theme, symboleExtension } from "@/lib/themes";
+import NouveauDeck from "./NouveauDeck";
 
 export type LigneDeck = {
   id: string; name: string; format: string; theme: string;
@@ -24,6 +25,8 @@ export default function ListeDecks({ decks }: { decks: LigneDeck[] }) {
   const [nouveau, setNouveau] = useState("");
   const [saisieOuverte, setSaisieOuverte] = useState(false);
   const [survole, setSurvole] = useState<string | null>(null);
+  const [menuDeck, setMenuDeck] = useState<string | null>(null);
+  const [renomme, setRenomme] = useState<LigneDeck | null>(null);
 
   const chargerDossiers = useCallback(async () => {
     try { setDossiersDeclares(await (await fetch("/api/folders")).json()); }
@@ -101,6 +104,22 @@ export default function ListeDecks({ decks }: { decks: LigneDeck[] }) {
     router.refresh();
   }
 
+  async function majDeck(id: string, champs: Record<string, unknown>) {
+    await fetch(`/api/decks/${id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(champs),
+    });
+    setMenuDeck(null);
+    router.refresh();
+  }
+
+  async function supprimerDeck(deck: LigneDeck) {
+    if (!window.confirm(`Supprimer « ${deck.name} » ? Cette action est definitive.`)) return;
+    await fetch(`/api/decks/${deck.id}`, { method: "DELETE" });
+    setMenuDeck(null);
+    router.refresh();
+  }
+
   async function ranger(deck: LigneDeck, folder: string, tags: string) {
     await fetch(`/api/decks/${deck.id}`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },
@@ -116,7 +135,31 @@ export default function ListeDecks({ decks }: { decks: LigneDeck[] }) {
       on ? "border-accent text-accent" : "border-bordure text-attenue hover:text-texte"}`;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" onClick={() => setMenuDeck(null)}>
+      <div className="flex flex-wrap items-center gap-3">
+        <NouveauDeck />
+        {saisieOuverte ? (
+          <span className="flex items-center gap-2 rounded-lg border border-accent bg-panneau px-3 py-2">
+            <input autoFocus value={nouveau} onChange={(e) => setNouveau(e.target.value)}
+                   onKeyDown={(e) => { if (e.key === "Enter") void creerDossier();
+                                       if (e.key === "Escape") setSaisieOuverte(false); }}
+                   placeholder="Nom du dossier" className="w-48 text-sm" />
+            <button onClick={creerDossier}
+                    className="rounded-md bg-accent px-3 py-1 text-sm font-medium text-accent-texte">
+              Creer
+            </button>
+          </span>
+        ) : (
+          <button onClick={() => setSaisieOuverte(true)}
+                  className="flex items-center gap-2 rounded-lg border border-bordure bg-panneau
+                             px-4 py-2 font-medium hover:border-accent hover:text-accent">
+            <span className="text-xl leading-none">+</span> Nouveau dossier
+          </button>
+        )}
+      </div>
+
+      {/* Le bloc de filtres n'a de sens qu'une fois des decks presents. */}
+      {decks.length > 0 && (
       <div className="space-y-2 rounded-lg border border-bordure bg-panneau p-3">
         <div className="flex flex-wrap items-center gap-2">
           <input value={recherche} onChange={(e) => setRecherche(e.target.value)}
@@ -157,21 +200,6 @@ export default function ListeDecks({ decks }: { decks: LigneDeck[] }) {
                  libelle={SANS_DOSSIER}
                  compte={decks.filter((x) => !x.folder).length} />
 
-          {saisieOuverte ? (
-            <span className="flex items-center gap-1">
-              <input autoFocus value={nouveau} onChange={(e) => setNouveau(e.target.value)}
-                     onKeyDown={(e) => { if (e.key === "Enter") void creerDossier();
-                                         if (e.key === "Escape") setSaisieOuverte(false); }}
-                     placeholder="Nom du dossier" className="w-40 py-0.5 text-xs" />
-              <button onClick={creerDossier} className="text-xs text-accent">creer</button>
-            </span>
-          ) : (
-            <button onClick={() => setSaisieOuverte(true)}
-                    className="rounded-full border border-dashed border-bordure px-2.5 py-0.5 text-xs
-                               text-attenue hover:border-accent hover:text-accent">
-              + nouveau dossier
-            </button>
-          )}
           <span className="text-[11px] text-attenue">
             Fais glisser un deck sur un dossier pour l&apos;y ranger.
           </span>
@@ -188,19 +216,41 @@ export default function ListeDecks({ decks }: { decks: LigneDeck[] }) {
           </div>
         )}
       </div>
+      )}
 
       {filtres.length === 0 ? (
-        <p className="rounded-xl border border-bordure bg-panneau p-12 text-center text-attenue">
-          Aucun deck ne correspond a ce filtre.
-        </p>
+        <div className="rounded-xl border border-bordure bg-panneau p-12 text-center">
+          <p className="text-attenue">
+            {decks.length === 0
+              ? "Aucun deck pour l'instant."
+              : "Aucun deck ne correspond a ce filtre."}
+          </p>
+          {decks.length === 0 && (
+            <p className="mt-1 text-sm text-attenue">
+              Cree ton premier deck et choisis son identite visuelle.
+            </p>
+          )}
+        </div>
       ) : (
         groupes.map(([nomDossier, liste]) => (
           <section key={nomDossier || "_"} className="space-y-3">
-            {groupes.length > 1 && (
-              <h2 className="text-sm uppercase tracking-wide text-attenue">
-                {nomDossier || SANS_DOSSIER}
-              </h2>
-            )}
+            <div
+              onDragOver={(e) => { e.preventDefault(); setSurvole(nomDossier); }}
+              onDragLeave={() => setSurvole(null)}
+              onDrop={(e) => { e.preventDefault();
+                               deposer(e.dataTransfer.getData("text/plain"), nomDossier); }}
+              className={`flex items-baseline gap-3 rounded-lg border-l-4 px-3 py-1.5 transition ${
+                survole === nomDossier
+                  ? "border-l-accent bg-[color-mix(in_srgb,var(--accent)_12%,transparent)]"
+                  : "border-l-bordure"}`}>
+              <h2 className="text-base font-medium">{nomDossier || SANS_DOSSIER}</h2>
+              <span className="text-sm text-attenue">
+                {liste.length} deck{liste.length > 1 ? "s" : ""}
+              </span>
+              <span className="ml-auto text-[11px] text-attenue">
+                deposer un deck ici pour l&apos;y ranger
+              </span>
+            </div>
             <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
               {liste.map((d) => {
                 const t = theme(d.theme);
@@ -247,18 +297,63 @@ export default function ListeDecks({ decks }: { decks: LigneDeck[] }) {
                       </div>
                     </Link>
 
-                    <button onClick={() => setRange(d)} title="Ranger ce deck"
-                            className="absolute right-2 top-2 rounded-md bg-black/70 px-2 py-1 text-xs text-white
-                                       opacity-0 transition hover:bg-black/90 focus:opacity-100
-                                       group-hover:opacity-100 [li:hover_&]:opacity-100">
-                      Ranger
+                    <button onClick={(e) => { e.stopPropagation();
+                                              setMenuDeck(menuDeck === d.id ? null : d.id); }}
+                            title="Reglages du deck"
+                            className="absolute right-2 top-2 rounded-md bg-black/70 px-2 py-1 text-sm
+                                       leading-none text-white opacity-0 transition hover:bg-black/90
+                                       [li:hover_&]:opacity-100"
+                            style={menuDeck === d.id ? { opacity: 1 } : undefined}>
+                      ⋯
                     </button>
+
+                    {menuDeck === d.id && (
+                      <div className="absolute right-2 top-10 z-20 w-52 rounded-md border border-bordure
+                                      bg-panneau py-1 shadow-2xl"
+                           onClick={(e) => e.stopPropagation()}>
+                        <button onClick={() => { setRange(d); setMenuDeck(null); }}
+                                className="block w-full px-3 py-1.5 text-left text-xs hover:text-accent">
+                          Dossier et etiquettes
+                        </button>
+                        <button onClick={() => { setRenomme(d); setMenuDeck(null); }}
+                                className="block w-full px-3 py-1.5 text-left text-xs hover:text-accent">
+                          Renommer
+                        </button>
+                        <div className="border-t border-bordure pt-1">
+                          <p className="px-3 py-0.5 text-[10px] uppercase tracking-wide text-attenue">
+                            Identite visuelle
+                          </p>
+                          <div className="max-h-40 overflow-y-auto">
+                            {THEMES.map((x) => (
+                              <button key={x.id} onClick={() => void majDeck(d.id, { theme: x.id })}
+                                      className={`flex w-full items-center gap-2 px-3 py-1 text-left text-xs
+                                                  hover:text-accent ${d.theme === x.id ? "text-accent" : ""}`}>
+                                <span className="h-2.5 w-2.5 rounded-full"
+                                      style={{ background: x.couleurs.accent }} />
+                                {x.nom}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <button onClick={() => supprimerDeck(d)}
+                                className="mt-1 block w-full border-t border-bordure px-3 py-1.5 text-left
+                                           text-xs text-attenue hover:text-red-400">
+                          Supprimer le deck
+                        </button>
+                      </div>
+                    )}
                   </li>
                 );
               })}
             </ul>
           </section>
         ))
+      )}
+
+      {renomme && (
+        <Renommer deck={renomme}
+                  onValider={(nom) => { void majDeck(renomme.id, { name: nom }); setRenomme(null); }}
+                  onFermer={() => setRenomme(null)} />
       )}
 
       {range && (
@@ -350,5 +445,33 @@ function Cible({
         </button>
       )}
     </span>
+  );
+}
+
+
+/** Renommage d'un deck depuis l'ecran principal. */
+function Renommer({
+  deck, onValider, onFermer,
+}: { deck: LigneDeck; onValider: (nom: string) => void; onFermer: () => void }) {
+  const [nom, setNom] = useState(deck.name);
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 p-6" onClick={onFermer}>
+      <div className="w-full max-w-md rounded-xl border border-bordure bg-panneau p-5"
+           onClick={(e) => e.stopPropagation()}>
+        <h2 className="mb-3 text-lg font-semibold">Renommer le deck</h2>
+        <input autoFocus value={nom} onChange={(e) => setNom(e.target.value)}
+               onKeyDown={(e) => { if (e.key === "Enter" && nom.trim()) onValider(nom.trim()); }}
+               className="mb-4 w-full" />
+        <div className="flex gap-2">
+          <button onClick={() => nom.trim() && onValider(nom.trim())}
+                  className="rounded-md bg-accent px-4 py-1.5 text-sm font-medium text-accent-texte">
+            Enregistrer
+          </button>
+          <button onClick={onFermer} className="rounded-md border border-bordure px-4 py-1.5 text-sm">
+            Annuler
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import TailleCartes from "./TailleCartes";
+import TailleCartes, { EVENEMENT_TAILLE } from "./TailleCartes";
 
 export type CarteJeu = {
   uid: string; nom: string; image: string | null;
@@ -235,8 +235,55 @@ export default function Playtest({
     }, true);
   }
 
+  // La main ne doit jamais deborder ni defiler : on mesure la place reellement
+  // disponible, puis les cartes se chevauchent juste ce qu'il faut pour tenir.
+  const mainRef = useRef<HTMLDivElement>(null);
+  const [largeurMain, setLargeurMain] = useState(0);
+  const [largeurCarte, setLargeurCarte] = useState(98);
+
+  useEffect(() => {
+    const el = mainRef.current;
+    if (!el) return;
+    // La hauteur plafonne la largeur : une carte de main ne prend jamais plus
+    // du quart de l'ecran, sinon le champ de bataille disparait.
+    const mesurer = () => {
+      const l = parseFloat(getComputedStyle(document.documentElement)
+        .getPropertyValue("--carte-l")) || 126;
+      setLargeurCarte(Math.min(l * 0.78, window.innerHeight * 0.185));
+      setLargeurMain(el.clientWidth);
+    };
+    // Mesure immediate : l'observateur ne rend la main qu'au prochain rendu du
+    // navigateur, qui n'arrive jamais dans un onglet reste en arriere-plan.
+    mesurer();
+    const observateur = new ResizeObserver(() => mesurer());
+    observateur.observe(el);
+    window.addEventListener(EVENEMENT_TAILLE, mesurer);
+    window.addEventListener("resize", mesurer);
+    return () => {
+      observateur.disconnect();
+      window.removeEventListener(EVENEMENT_TAILLE, mesurer);
+      window.removeEventListener("resize", mesurer);
+    };
+  }, []);
+
+  // L'eventail ne depasse pas 28 degres au total : au-dela les cartes des
+  // extremites debordent lateralement de leur emplacement.
+  const angle = (i: number) =>
+    (i - (zones.main.length - 1) / 2) * Math.min(2.5, 28 / Math.max(1, zones.main.length - 1));
+
+  const chevauchement = useMemo(() => {
+    const n = zones.main.length;
+    const mini = Math.round(largeurCarte * 0.33);
+    if (n < 2 || largeurMain === 0) return mini;
+    // L'inclinaison elargit l'encombrement des cartes de bout : on lui reserve
+    // sa part avant de repartir la place restante.
+    const utile = largeurMain - 8 - largeurCarte * 0.7;
+    const necessaire = (n * largeurCarte - utile) / (n - 1);
+    return Math.max(mini, Math.min(largeurCarte * 0.9, necessaire));
+  }, [zones.main.length, largeurMain, largeurCarte]);
+
   return (
-    <div className="flex flex-col gap-2" style={{ height: "calc(100vh - 7.5rem)" }}
+    <div className="flex min-h-0 flex-1 flex-col gap-2"
          onClick={() => { setMenu(null); setMenuPlateau(null); }}>
       <div className="flex shrink-0 flex-wrap items-center gap-3 rounded-lg border border-bordure bg-panneau px-3 py-2">
         <span className="text-sm">Tour <strong>{tour}</strong></span>
@@ -290,7 +337,8 @@ export default function Playtest({
                   onDepot={(uid) => deplacer(uid, "bibliotheque")}
                   aide="Cliquer pour piocher · clic droit pour parcourir" />
 
-            <div className="min-w-0 flex-1 rounded-xl border border-bordure p-2"
+            <div ref={mainRef}
+                 className="min-w-0 flex-1 overflow-hidden rounded-xl border border-bordure p-2"
                  style={{ background:
                    "linear-gradient(to top, color-mix(in srgb, var(--accent) 5%, var(--panneau)), var(--panneau))" }}
                  onDragOver={(e) => e.preventDefault()}
@@ -298,9 +346,9 @@ export default function Playtest({
                                   deplacer(e.dataTransfer.getData("text/plain"), "main"); }}>
               <p className="mb-1 text-xs text-attenue">{LIBELLES.main} · {zones.main.length}</p>
               {zones.main.length === 0 ? (
-                <p className="py-8 text-center text-sm text-attenue">Main vide</p>
+                <p className="py-6 text-center text-sm text-attenue">Main vide</p>
               ) : (
-                <ul className="flex flex-wrap justify-center pt-6">
+                <ul className="flex flex-nowrap justify-center pt-5">
                   {zones.main.map((c, i) => (
                     <li key={c.uid} draggable
                         onDragStart={(e) => e.dataTransfer.setData("text/plain", c.uid)}
@@ -309,14 +357,15 @@ export default function Playtest({
                         title="Cliquer pour jouer, ou faire glisser pour placer soi-meme"
                         onContextMenu={(e) => { e.preventDefault(); e.stopPropagation();
                                                 setMenu({ uid: c.uid, zone: "main", x: e.clientX, y: e.clientY }); }}
-                        className="-ml-8 cursor-grab transition-transform duration-150 first:ml-0
+                        className="shrink-0 cursor-grab transition-transform duration-150
                                    hover:z-20 hover:-translate-y-5 hover:rotate-0"
-                        style={{ zIndex: i, transform: `rotate(${(i - (zones.main.length - 1) / 2) * 2.5}deg)` }}>
+                        style={{ zIndex: i, marginLeft: i === 0 ? 0 : -chevauchement,
+                                 transform: `rotate(${angle(i)}deg)` }}>
                       {c.image ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={c.image} alt={c.nom}
-                             className="rounded-[4.75%] border border-bordure shadow-xl"
-                             style={{ width: "calc(var(--carte-l) * 0.78)" }} />
+                             className="max-w-none rounded-[4.75%] border border-bordure shadow-xl"
+                             style={{ width: largeurCarte }} />
                       ) : <span className="block rounded border border-bordure p-2 text-xs">{c.nom}</span>}
                     </li>
                   ))}

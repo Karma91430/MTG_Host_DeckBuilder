@@ -1,6 +1,5 @@
 import { db } from "@/lib/db";
 import { cartes, imageDe } from "@/lib/scryfall";
-import NouveauDeck from "@/components/NouveauDeck";
 import ListeDecks, { type LigneDeck } from "@/components/ListeDecks";
 
 export const dynamic = "force-dynamic";
@@ -35,26 +34,15 @@ export default async function Accueil() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold">Mes decks</h1>
-          <p className="text-sm text-attenue">
-            {decks.length} deck{decks.length > 1 ? "s" : ""}
-          </p>
-        </div>
-        <NouveauDeck />
+      <div>
+        <h1 className="text-2xl font-semibold">Mes decks</h1>
+        <p className="text-sm text-attenue">
+          {decks.length} deck{decks.length > 1 ? "s" : ""}
+        </p>
       </div>
 
-      {decks.length === 0 ? (
-        <div className="rounded-xl border border-bordure bg-panneau p-12 text-center">
-          <p className="text-attenue">Aucun deck pour l&apos;instant.</p>
-          <p className="mt-1 text-sm text-attenue">
-            Cree ton premier deck et choisis son identite visuelle.
-          </p>
-        </div>
-      ) : (
-        <ListeDecks decks={lignes} />
-      )}
+      {/* La liste s'affiche meme a vide : elle porte les boutons de creation. */}
+      <ListeDecks decks={lignes} />
     </div>
   );
 }

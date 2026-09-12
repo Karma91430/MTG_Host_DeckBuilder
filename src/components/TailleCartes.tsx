@@ -14,8 +14,12 @@ import { useEffect, useState } from "react";
 const CLE = "mtg-taille-cartes";
 const DEFAUT = 126;
 
+/** Emis a chaque changement de reglage, pour les vues qui mesurent en pixels. */
+export const EVENEMENT_TAILLE = "mtg-taille-cartes";
+
 export function appliquerTaille(px: number) {
   document.documentElement.style.setProperty("--carte-l", `${px}px`);
+  window.dispatchEvent(new CustomEvent(EVENEMENT_TAILLE, { detail: px }));
 }
 
 export default function TailleCartes() {

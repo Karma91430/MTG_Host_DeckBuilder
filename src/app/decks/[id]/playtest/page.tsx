@@ -51,9 +51,12 @@ export default async function PagePlaytest({ params }: { params: Promise<{ id: s
     .sort((a, b) => a.nom.localeCompare(b.nom));
 
   return (
-    <ThemeShell id={deck.theme} className="relative left-1/2 w-screen -translate-x-1/2 min-h-screen bg-fond px-6 py-6">
-      <div className="mb-4 flex items-center gap-3">
-        <h1 className="text-xl font-semibold">{deck.name}</h1>
+    // Plein ecran pose : le playtest recouvre l'en-tete du site et n'allonge pas
+    // le document, donc aucune barre de defilement n'apparait.
+    <ThemeShell id={deck.theme} className="fixed inset-0 z-40 flex flex-col overflow-hidden
+                                           bg-fond px-4 pb-3 pt-2">
+      <div className="mb-2 flex shrink-0 items-center gap-3">
+        <h1 className="text-lg font-semibold">{deck.name}</h1>
         <span className="text-sm text-attenue">{bibliotheque.length} cartes</span>
         <Link href={`/decks/${deck.id}`}
               className="ml-auto rounded-md border border-bordure px-3 py-1.5 text-sm">
