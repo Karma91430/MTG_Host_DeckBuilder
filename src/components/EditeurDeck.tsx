@@ -13,8 +13,11 @@ import ImportExport from "./ImportExport";
 import FicheCarte from "./FicheCarte";
 import Probabilites from "./Probabilites";
 import Acquisition from "./Acquisition";
+import Paquets from "./Paquets";
+import ReglagesDeck from "./ReglagesDeck";
 
-type Deck = { id: string; name: string; format: string; description: string; theme: string };
+type Deck = { id: string; name: string; format: string; description: string;
+              theme: string; folder: string; tags: string };
 
 export default function EditeurDeck({
   deck, entrees, stats, problemes,
@@ -100,6 +103,9 @@ export default function EditeurDeck({
                     title="Retablir" className="border-l border-bordure px-3 py-2 text-sm disabled:opacity-30">↷</button>
           </span>
           <ImportExport deckId={deck.id} />
+          <Paquets deckId={deck.id}
+                   categories={[...new Set(entrees.map((e) => e.category).filter(Boolean))].sort()} />
+          <ReglagesDeck deckId={deck.id} folder={deck.folder} tags={deck.tags} />
           <Link href={`/decks/${deck.id}/playtest`}
                 className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-texte">
             Tester

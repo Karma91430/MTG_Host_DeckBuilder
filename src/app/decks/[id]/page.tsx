@@ -26,7 +26,8 @@ export default async function PageDeck({ params }: { params: Promise<{ id: strin
     <ThemeShell id={deck.theme} className="-mx-6 -my-8 min-h-screen bg-fond px-6 py-8">
       <EditeurDeck
         deck={{ id: deck.id, name: deck.name, format: deck.format,
-                description: deck.description, theme: deck.theme }}
+                description: deck.description, theme: deck.theme,
+                folder: deck.folder, tags: deck.tags }}
         entrees={entrees}
         stats={statistiques(entrees)}
         problemes={problemes(deck.format, entrees)}

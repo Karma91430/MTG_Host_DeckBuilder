@@ -15,18 +15,22 @@ export async function GET(_req: Request, { params }: Ctx) {
 export async function PATCH(req: Request, { params }: Ctx) {
   const { id } = await params;
   const body = (await req.json()) as
-    { name?: string; format?: string; description?: string; theme?: string };
+    { name?: string; format?: string; description?: string; theme?: string;
+      folder?: string; tags?: string };
   const deck = db().prepare("SELECT * FROM decks WHERE id = ?").get(id) as DeckRow | undefined;
   if (!deck) return NextResponse.json({ error: "Introuvable" }, { status: 404 });
 
   db().prepare(`
-    UPDATE decks SET name = ?, format = ?, description = ?, theme = ?, updated_at = ?
+    UPDATE decks SET name = ?, format = ?, description = ?, theme = ?,
+                     folder = ?, tags = ?, updated_at = ?
     WHERE id = ?
   `).run(
     body.name?.trim() || deck.name,
     body.format ?? deck.format,
     body.description ?? deck.description,
     body.theme ?? deck.theme,
+    body.folder ?? deck.folder,
+    body.tags ?? deck.tags,
     new Date().toISOString(), id,
   );
   return NextResponse.json(db().prepare("SELECT * FROM decks WHERE id = ?").get(id));
