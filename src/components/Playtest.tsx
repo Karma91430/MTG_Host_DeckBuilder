@@ -73,16 +73,15 @@ export default function Playtest({
   const [tour, setTour] = useState(1);
   const [vies, setVies] = useState(commandants.length > 0 ? 40 : 20);
   const [mulligans, setMulligans] = useState(0);
-  const [journal, setJournal] = useState<string[]>([]);
   const [survol, setSurvol] = useState<CarteJeu | null>(null);
   const [menu, setMenu] = useState<{ uid: string; zone: Zone; x: number; y: number } | null>(null);
   const [panneau, setPanneau] = useState<{ titre: string; cartes: CarteJeu[] } | null>(null);
   const [menuPlateau, setMenuPlateau] = useState<{ x: number; y: number } | null>(null);
   const champ = useRef<HTMLDivElement>(null);
 
-  const noter = useCallback((texte: string) => {
-    setJournal((j) => [`T${tour} · ${texte}`, ...j].slice(0, 60));
-  }, [tour]);
+  // Les actions ne sont plus journalisees : le plateau parle de lui-meme, et
+  // la place gagnee profite au champ de bataille.
+  const noter = useCallback((_texte: string) => {}, []);
 
   /** Retire une carte de sa zone, quelle qu'elle soit. */
   const extraire = (etat: Record<Zone, CarteJeu[]>, uid: string) => {
@@ -237,8 +236,9 @@ export default function Playtest({
   }
 
   return (
-    <div className="space-y-3" onClick={() => { setMenu(null); setMenuPlateau(null); }}>
-      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-bordure bg-panneau p-2.5">
+    <div className="flex flex-col gap-2" style={{ height: "calc(100vh - 7.5rem)" }}
+         onClick={() => { setMenu(null); setMenuPlateau(null); }}>
+      <div className="flex shrink-0 flex-wrap items-center gap-3 rounded-lg border border-bordure bg-panneau px-3 py-2">
         <span className="text-sm">Tour <strong>{tour}</strong></span>
         <span className="flex items-center gap-1 rounded-md border border-bordure px-2 py-0.5">
           <button onClick={() => setVies((v) => v - 1)} className="px-1.5 text-attenue hover:text-red-400">−</button>
@@ -248,79 +248,20 @@ export default function Playtest({
         <span className="text-xs text-attenue">
           {zones.bibliotheque.length} en bibliotheque · {zones.main.length} en main · {terrains} terrains
         </span>
-
         <TailleCartes />
-
-        <div className="ml-auto flex flex-wrap items-center gap-3">
-          <Groupe titre="Tour">
-            <button className={bouton} onClick={() => piocher(1)} title="Piocher une carte (D)">
-              Piocher <kbd className="opacity-50">D</kbd>
-            </button>
-            <button className={bouton} onClick={tourSuivant}
-                    title="Degage tout, avance d'un tour et pioche (N)">
-              Tour suivant <kbd className="opacity-50">N</kbd>
-            </button>
-            <button className={bouton} onClick={degagerTout} title="Degager tous les permanents (U)">
-              Degager <kbd className="opacity-50">U</kbd>
-            </button>
-          </Groupe>
-
-          <Groupe titre="Bibliotheque">
-            <button className={bouton}
-                    onClick={() => { setZones((z) => ({ ...z, bibliotheque: melanger(z.bibliotheque) }));
-                                     noter("melange"); }}
-                    title="Melanger la bibliotheque (S)">
-              Melanger <kbd className="opacity-50">S</kbd>
-            </button>
-            <button className={bouton}
-                    onClick={() => setPanneau({ titre: "Bibliotheque", cartes: zones.bibliotheque })}
-                    title="Parcourir la bibliotheque et prendre une carte">
-              Chercher
-            </button>
-            <button className={bouton} onClick={() => meuler(1)}
-                    title="Mettre la carte du dessus au cimetiere">
-              Meuler
-            </button>
-          </Groupe>
-
-          <Groupe titre="Partie">
-            <button className={bouton} onClick={() => creerJeton()} title="Creer un jeton (T)">
-              Jeton <kbd className="opacity-50">T</kbd>
-            </button>
-            <button className={bouton}
-                    onClick={() => { nouvelleMain(7); setMulligans(0); noter("nouvelle partie"); }}
-                    title="Tout remelanger et repiocher sept cartes">
-              Nouvelle main
-            </button>
-            <button className={bouton}
-                    onClick={() => { nouvelleMain(7); setMulligans((m) => m + 1); noter("mulligan"); }}
-                    title="Remelanger et repiocher, une carte de plus a rendre (M)">
-              Mulligan {mulligans > 0 && `(${mulligans})`}
-            </button>
-          </Groupe>
-        </div>
+        <span className="ml-auto text-[11px] text-attenue">
+          Clic droit sur le plateau pour toutes les actions · clic sur une carte en main pour la jouer ·
+          glisser pour placer soi-meme · <kbd>D</kbd> pioche · <kbd>N</kbd> tour
+        </span>
       </div>
 
-      <p className="text-[11px] text-attenue">
-        Clic sur une carte en main pour la jouer · glisser pour la placer soi-meme ·
-        clic sur un permanent pour l&apos;engager · clic droit pour le menu complet
-      </p>
-
-      {mulligans > 0 && (
-        <p className="text-xs text-attenue">
-          Regle de Londres : garde sept cartes, puis remets-en {mulligans} sous la bibliotheque
-          en les y faisant glisser.
-        </p>
-      )}
-
-      <div className="grid gap-3 xl:grid-cols-[1fr_15rem]">
-        <div className="space-y-3">
+      <div className="flex min-h-0 flex-1 flex-col gap-2">
           <div ref={champ}
                onDragOver={(e) => e.preventDefault()}
                onDrop={deposerSurChamp}
                onContextMenu={(e) => { e.preventDefault();
                                        setMenuPlateau({ x: e.clientX, y: e.clientY }); }}
-               className="relative min-h-[30rem] overflow-hidden rounded-xl border border-bordure p-2"
+               className="relative min-h-0 flex-1 overflow-hidden rounded-xl border border-bordure p-2"
                style={{ background:
                  "radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--accent) 7%, var(--panneau)) 0%, var(--fond) 75%)",
                  boxShadow: "inset 0 0 80px rgba(0,0,0,.45)" }}>
@@ -342,7 +283,7 @@ export default function Playtest({
             ))}
           </div>
 
-          <div className="flex items-end gap-3">
+        <div className="flex shrink-0 items-end gap-3">
             <Pile titre="Bibliotheque" nombre={zones.bibliotheque.length} dos
                   onClic={() => piocher(1)}
                   onMenu={() => setPanneau({ titre: "Bibliotheque", cartes: zones.bibliotheque })}
@@ -406,24 +347,13 @@ export default function Playtest({
           </div>
         </div>
 
-        <aside className="space-y-2">
-          {survol?.image && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={survol.image} alt={survol.nom}
-                 className="w-full rounded-[4.75%] border border-bordure" />
-          )}
-
-          <div className="rounded-xl border border-bordure p-2"
-               style={{ background:
-                 "linear-gradient(to top, color-mix(in srgb, var(--accent) 5%, var(--panneau)), var(--panneau))" }}>
-            <p className="mb-1 text-xs font-medium">Journal</p>
-            <ul className="max-h-48 space-y-0.5 overflow-y-auto text-[11px] text-attenue">
-              {journal.length === 0 ? <li>Rien pour l&apos;instant.</li>
-                : journal.map((l, i) => <li key={i}>{l}</li>)}
-            </ul>
-          </div>
-        </aside>
-      </div>
+      {survol?.image && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={survol.image} alt={survol.nom}
+             className="pointer-events-none fixed bottom-4 right-4 z-40 rounded-[4.75%]
+                        border border-bordure shadow-2xl"
+             style={{ width: "calc(var(--carte-l) * 1.15)" }} />
+      )}
 
       {menuPlateau && (
         <MenuPlateau x={menuPlateau.x} y={menuPlateau.y} jetons={jetons}

@@ -21,7 +21,7 @@ export default function ListeDeck({
   onSurvol: (e: EntreeResolue | null) => void;
   onOuvrir: (e: EntreeResolue) => void;
 }) {
-  const [affichage, setAffichage] = useState<Affichage>("colonnes");
+  const [affichage, setAffichage] = useState<Affichage>("grille");
   const [groupement, setGroupement] = useState<Groupement>("type");
   const [edite, setEdite] = useState<string | null>(null);
   const [filtreTexte, setFiltreTexte] = useState("");

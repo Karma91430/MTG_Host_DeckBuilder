@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { theme, symboleExtension } from "@/lib/themes";
 
 export type LigneDeck = {
@@ -20,9 +20,22 @@ export default function ListeDecks({ decks }: { decks: LigneDeck[] }) {
   const [etiquette, setEtiquette] = useState("");
   const [format, setFormat] = useState("");
   const [range, setRange] = useState<LigneDeck | null>(null);
+  const [dossiersDeclares, setDossiersDeclares] = useState<string[]>([]);
+  const [nouveau, setNouveau] = useState("");
+  const [saisieOuverte, setSaisieOuverte] = useState(false);
+  const [survole, setSurvole] = useState<string | null>(null);
 
+  const chargerDossiers = useCallback(async () => {
+    try { setDossiersDeclares(await (await fetch("/api/folders")).json()); }
+    catch { /* la liste se deduira des decks */ }
+  }, []);
+  useEffect(() => { void chargerDossiers(); }, [chargerDossiers]);
+
+  // Les dossiers declares s'ajoutent a ceux deja portes par un deck, pour
+  // qu'un dossier fraichement cree apparaisse meme s'il est encore vide.
   const dossiers = useMemo(
-    () => [...new Set(decks.map((d) => d.folder).filter(Boolean))].sort(), [decks]);
+    () => [...new Set([...decks.map((d) => d.folder).filter(Boolean), ...dossiersDeclares])].sort(),
+    [decks, dossiersDeclares]);
   const etiquettes = useMemo(() => {
     const t = new Set<string>();
     for (const d of decks) {
@@ -59,6 +72,35 @@ export default function ListeDecks({ decks }: { decks: LigneDeck[] }) {
     });
   }, [filtres]);
 
+  /** Depot d'un deck sur un dossier : son rangement change aussitot. */
+  async function deposer(deckId: string, folder: string) {
+    setSurvole(null);
+    await fetch(`/api/decks/${deckId}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ folder }),
+    });
+    router.refresh();
+  }
+
+  async function creerDossier() {
+    const nom = nouveau.trim();
+    if (!nom) return;
+    await fetch("/api/folders", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: nom }),
+    });
+    setNouveau("");
+    setSaisieOuverte(false);
+    void chargerDossiers();
+  }
+
+  async function supprimerDossier(nom: string) {
+    await fetch(`/api/folders?name=${encodeURIComponent(nom)}`, { method: "DELETE" });
+    if (dossier === nom) setDossier("");
+    void chargerDossiers();
+    router.refresh();
+  }
+
   async function ranger(deck: LigneDeck, folder: string, tags: string) {
     await fetch(`/api/decks/${deck.id}`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },
@@ -79,11 +121,6 @@ export default function ListeDecks({ decks }: { decks: LigneDeck[] }) {
         <div className="flex flex-wrap items-center gap-2">
           <input value={recherche} onChange={(e) => setRecherche(e.target.value)}
                  placeholder="Filtrer par nom" className="w-56 text-sm" />
-          <select value={dossier} onChange={(e) => setDossier(e.target.value)} className="text-sm">
-            <option value="">Tous les dossiers</option>
-            {dossiers.map((d) => <option key={d} value={d}>{d}</option>)}
-            <option value={SANS_DOSSIER}>{SANS_DOSSIER}</option>
-          </select>
           <select value={format} onChange={(e) => setFormat(e.target.value)}
                   className="text-sm capitalize">
             <option value="">Tous formats</option>
@@ -98,6 +135,46 @@ export default function ListeDecks({ decks }: { decks: LigneDeck[] }) {
               effacer
             </button>
           )}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-1.5 border-t border-bordure pt-2">
+          <span className="text-xs text-attenue">Dossiers</span>
+          <Cible actif={dossier === ""} survole={false}
+                 onClic={() => setDossier("")} libelle="Tous" />
+          {dossiers.map((d) => (
+            <Cible key={d} actif={dossier === d} survole={survole === d}
+                   onClic={() => setDossier(dossier === d ? "" : d)}
+                   onDepot={(id) => deposer(id, d)}
+                   onSurvol={(v) => setSurvole(v ? d : null)}
+                   onSupprimer={() => supprimerDossier(d)}
+                   libelle={d}
+                   compte={decks.filter((x) => x.folder === d).length} />
+          ))}
+          <Cible actif={dossier === SANS_DOSSIER} survole={survole === ""}
+                 onClic={() => setDossier(dossier === SANS_DOSSIER ? "" : SANS_DOSSIER)}
+                 onDepot={(id) => deposer(id, "")}
+                 onSurvol={(v) => setSurvole(v ? "" : null)}
+                 libelle={SANS_DOSSIER}
+                 compte={decks.filter((x) => !x.folder).length} />
+
+          {saisieOuverte ? (
+            <span className="flex items-center gap-1">
+              <input autoFocus value={nouveau} onChange={(e) => setNouveau(e.target.value)}
+                     onKeyDown={(e) => { if (e.key === "Enter") void creerDossier();
+                                         if (e.key === "Escape") setSaisieOuverte(false); }}
+                     placeholder="Nom du dossier" className="w-40 py-0.5 text-xs" />
+              <button onClick={creerDossier} className="text-xs text-accent">creer</button>
+            </span>
+          ) : (
+            <button onClick={() => setSaisieOuverte(true)}
+                    className="rounded-full border border-dashed border-bordure px-2.5 py-0.5 text-xs
+                               text-attenue hover:border-accent hover:text-accent">
+              + nouveau dossier
+            </button>
+          )}
+          <span className="text-[11px] text-attenue">
+            Fais glisser un deck sur un dossier pour l&apos;y ranger.
+          </span>
         </div>
 
         {etiquettes.length > 0 && (
@@ -128,7 +205,8 @@ export default function ListeDecks({ decks }: { decks: LigneDeck[] }) {
               {liste.map((d) => {
                 const t = theme(d.theme);
                 return (
-                  <li key={d.id} className="relative">
+                  <li key={d.id} className="relative" draggable
+                      onDragStart={(e) => e.dataTransfer.setData("text/plain", d.id)}>
                     <Link href={`/decks/${d.id}`}
                           className="group block overflow-hidden rounded-xl border shadow-lg transition
                                      hover:-translate-y-0.5 hover:shadow-xl"
@@ -238,5 +316,39 @@ function Rangement({
         </div>
       </div>
     </div>
+  );
+}
+
+
+/** Dossier du rail : filtre au clic, accepte le depot d'un deck. */
+function Cible({
+  libelle, compte, actif, survole, onClic, onDepot, onSurvol, onSupprimer,
+}: {
+  libelle: string; compte?: number; actif: boolean; survole: boolean;
+  onClic: () => void;
+  onDepot?: (deckId: string) => void;
+  onSurvol?: (dessus: boolean) => void;
+  onSupprimer?: () => void;
+}) {
+  return (
+    <span
+      onDragOver={(e) => { if (onDepot) { e.preventDefault(); onSurvol?.(true); } }}
+      onDragLeave={() => onSurvol?.(false)}
+      onDrop={(e) => { if (!onDepot) return;
+                       e.preventDefault(); onDepot(e.dataTransfer.getData("text/plain")); }}
+      className={`group inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs transition ${
+        survole ? "border-accent bg-[color-mix(in_srgb,var(--accent)_18%,transparent)] text-accent"
+        : actif ? "border-accent text-accent"
+        : "border-bordure text-attenue hover:text-texte"}`}
+    >
+      <button onClick={onClic}>{libelle}</button>
+      {compte !== undefined && <span className="opacity-60">{compte}</span>}
+      {onSupprimer && (
+        <button onClick={onSupprimer} title="Supprimer le dossier — les decks en sortent"
+                className="hidden text-attenue hover:text-red-400 group-hover:inline">
+          ×
+        </button>
+      )}
+    </span>
   );
 }

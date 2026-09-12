@@ -58,6 +58,13 @@ function migrate(db: Database.Database) {
       created_at TEXT NOT NULL
     );
 
+    -- Dossiers de rangement. Une table dediee plutot qu'une simple colonne
+    -- sur les decks : sans cela, un dossier vide disparaitrait au rechargement.
+    CREATE TABLE IF NOT EXISTS folders (
+      name       TEXT PRIMARY KEY,
+      created_at TEXT NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS card_cache (
       id         TEXT PRIMARY KEY,
       payload    TEXT NOT NULL,
