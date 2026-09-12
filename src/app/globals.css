@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+/* Les couleurs viennent du theme actif, injecte en variables sur un conteneur.
+   Les valeurs ci-dessous ne servent que si aucun theme n'est applique. */
+:root {
+  --fond: #0d1117; --panneau: #161b22; --bordure: #262d36;
+  --texte: #e6edf3; --attenue: #8b949e; --accent: #d98c3f; --accent-texte: #0d1117;
+}
+
+@theme inline {
+  --color-fond: var(--fond);
+  --color-panneau: var(--panneau);
+  --color-bordure: var(--bordure);
+  --color-texte: var(--texte);
+  --color-attenue: var(--attenue);
+  --color-accent: var(--accent);
+  --color-accent-texte: var(--accent-texte);
+}
+
+html, body { background: var(--fond); color: var(--texte); }
+body { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
+
+input, select, textarea {
+  background: var(--fond); border: 1px solid var(--bordure);
+  border-radius: .375rem; padding: .375rem .625rem; color: inherit;
+}
+input:focus, select:focus, textarea:focus {
+  outline: 2px solid var(--accent); outline-offset: -1px;
+}
+
+/* Symbole d'extension : les fichiers de Scryfall sont monochromes noirs, on
+   les teinte avec la couleur d'accent du theme. */
+.symbole-extension {
+  filter: brightness(0) saturate(100%) invert(1);
+  opacity: .85;
+}

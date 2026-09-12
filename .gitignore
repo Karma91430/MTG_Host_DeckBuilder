@@ -1,0 +1,9 @@
+node_modules
+.next
+next-env.d.ts
+data
+*.log
+.DS_Store
+
+# Le compose reel est propre a chaque machine.
+docker-compose.yml
