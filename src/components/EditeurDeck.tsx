@@ -14,6 +14,7 @@ import FicheCarte from "./FicheCarte";
 import MainDepart from "./MainDepart";
 import Acquisition from "./Acquisition";
 import Paquets from "./Paquets";
+import TailleCartes from "./TailleCartes";
 import ReglagesDeck from "./ReglagesDeck";
 
 type Deck = { id: string; name: string; format: string; description: string;
@@ -49,11 +50,11 @@ export default function EditeurDeck({
 
   const aVoir = entrees.filter((e) => e.zone === "maybe");
 
-  async function ajouter(carte: Carte, zone: string) {
+  async function ajouter(carte: Carte, zone: string, quantite = 1) {
     setOccupe(true);
     await fetch(`/api/decks/${deck.id}/cards`, {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cardId: carte.id, zone, quantity: 1 }),
+      body: JSON.stringify({ cardId: carte.id, zone, quantity: quantite }),
     });
     setOccupe(false);
     router.refresh();
@@ -117,6 +118,7 @@ export default function EditeurDeck({
           </div>
 
           <div className="ml-auto flex flex-wrap items-center gap-2">
+            <TailleCartes />
             <select value={deck.theme} onChange={(e) => void changerTheme(e.target.value)}
                     className="text-sm" title="Identite visuelle">
               {THEMES.map((x) => <option key={x.id} value={x.id}>{x.nom}</option>)}

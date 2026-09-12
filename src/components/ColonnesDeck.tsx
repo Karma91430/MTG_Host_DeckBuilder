@@ -12,8 +12,8 @@ import { imageDe } from "@/lib/carte";
  * premier plan et se devoile entierement.
  */
 
-/** Hauteur de bande visible d'une carte empilee, en pixels. */
-const BANDE = 42;
+/** Part de la largeur d'une carte laissee visible dans la pile. */
+const RATIO_BANDE = 0.24;
 
 export default function ColonnesDeck({
   groupes, onModifier, onSurvol, onOuvrir,
@@ -24,13 +24,16 @@ export default function ColonnesDeck({
   onOuvrir: (e: EntreeResolue) => void;
 }) {
   return (
-    <div className="flex gap-4 overflow-x-auto pb-4">
+    <div className="flex gap-3 overflow-x-auto pb-4">
       {groupes.map(([cle, liste]) => {
         // Les exemplaires multiples occupent une seule place dans la pile :
         // la quantite est affichee en pastille plutot que repetee.
-        const hauteur = (liste.length - 1) * BANDE + 240;
+        // Hauteur de la pile exprimee en fonction de la largeur reglee : une
+        // carte fait environ 1,4 fois sa largeur en hauteur.
+        const hauteur = `calc((${liste.length - 1} * var(--carte-l) * ${RATIO_BANDE})`
+          + ` + var(--carte-l) * 1.4)`;
         return (
-          <section key={cle} className="w-[172px] shrink-0">
+          <section key={cle} className="shrink-0" style={{ width: "var(--carte-l)" }}>
             <h3 className="mb-2 flex items-baseline justify-between gap-2 border-b border-bordure pb-1">
               <span className="truncate text-sm font-medium">{cle}</span>
               <span className="text-xs text-attenue">
@@ -43,7 +46,7 @@ export default function ColonnesDeck({
                 <li
                   key={e.id}
                   className="group absolute left-0 w-full transition-transform duration-150 hover:z-30 hover:-translate-y-1"
-                  style={{ top: i * BANDE, zIndex: i }}
+                  style={{ top: `calc(${i} * var(--carte-l) * ${RATIO_BANDE})`, zIndex: i }}
                   onMouseEnter={() => onSurvol(e)}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}

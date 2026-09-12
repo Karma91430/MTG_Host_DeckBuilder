@@ -1,10 +1,14 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 export type CarteJeu = {
   uid: string; nom: string; image: string | null;
   typeLigne: string; cmc: number; engagee: boolean;
+  /** Position libre sur le champ de bataille, en pourcentage de la zone. */
+  x?: number; y?: number;
+  marqueurs?: number;
+  jeton?: boolean;
 };
 
 type Zone = "bibliotheque" | "main" | "terrain" | "cimetiere" | "exil" | "commandement";
@@ -24,6 +28,8 @@ function melanger<T>(liste: T[]): T[] {
   return t;
 }
 
+const estTerrain = (c: CarteJeu) => /land|terrain/i.test(c.typeLigne);
+
 export default function Playtest({
   bibliotheque: depart, commandants,
 }: { bibliotheque: CarteJeu[]; commandants: CarteJeu[] }) {
@@ -36,10 +42,47 @@ export default function Playtest({
   const [mulligans, setMulligans] = useState(0);
   const [journal, setJournal] = useState<string[]>([]);
   const [survol, setSurvol] = useState<CarteJeu | null>(null);
+  const [menu, setMenu] = useState<{ uid: string; zone: Zone; x: number; y: number } | null>(null);
+  const [panneau, setPanneau] = useState<{ titre: string; cartes: CarteJeu[] } | null>(null);
+  const champ = useRef<HTMLDivElement>(null);
 
   const noter = useCallback((texte: string) => {
-    setJournal((j) => [`T${tour} · ${texte}`, ...j].slice(0, 40));
+    setJournal((j) => [`T${tour} · ${texte}`, ...j].slice(0, 60));
   }, [tour]);
+
+  /** Retire une carte de sa zone, quelle qu'elle soit. */
+  const extraire = (etat: Record<Zone, CarteJeu[]>, uid: string) => {
+    for (const z of Object.keys(etat) as Zone[]) {
+      const i = etat[z].findIndex((c) => c.uid === uid);
+      if (i >= 0) {
+        const carte = etat[z][i];
+        etat[z] = [...etat[z].slice(0, i), ...etat[z].slice(i + 1)];
+        return carte;
+      }
+    }
+    return null;
+  };
+
+  const deplacer = useCallback((uid: string, vers: Zone, pos?: { x: number; y: number }) => {
+    setZones((z) => {
+      const suivant = { ...z };
+      const carte = extraire(suivant, uid);
+      if (!carte) return z;
+      // Un jeton qui quitte le champ de bataille cesse d'exister.
+      if (carte.jeton && vers !== "terrain") return suivant;
+      const propre: CarteJeu = {
+        ...carte,
+        engagee: vers === "terrain" ? carte.engagee : false,
+        marqueurs: vers === "terrain" ? carte.marqueurs : 0,
+        x: pos?.x, y: pos?.y,
+      };
+      suivant[vers] = vers === "bibliotheque"
+        ? [...suivant[vers], propre]      // repose sous la bibliotheque
+        : [propre, ...suivant[vers]];
+      return suivant;
+    });
+    setMenu(null);
+  }, []);
 
   const piocher = useCallback((n = 1) => {
     setZones((z) => {
@@ -47,44 +90,34 @@ export default function Playtest({
       if (tirees.length === 0) return z;
       return { ...z, bibliotheque: z.bibliotheque.slice(n), main: [...z.main, ...tirees] };
     });
-    noter(n === 1 ? "pioche une carte" : `pioche ${n} cartes`);
+    noter(n === 1 ? "pioche" : `pioche ${n} cartes`);
+  }, [noter]);
+
+  const meuler = useCallback((n: number) => {
+    setZones((z) => ({
+      ...z,
+      bibliotheque: z.bibliotheque.slice(n),
+      cimetiere: [...z.bibliotheque.slice(0, n).reverse(), ...z.cimetiere],
+    }));
+    noter(`meule ${n} cartes`);
   }, [noter]);
 
   const nouvelleMain = useCallback((garde: number) => {
     setZones((z) => {
-      const tout = melanger([...z.bibliotheque, ...z.main, ...z.terrain, ...z.cimetiere, ...z.exil]);
+      const tout = melanger([
+        ...z.bibliotheque, ...z.main,
+        ...z.terrain.filter((c) => !c.jeton), ...z.cimetiere, ...z.exil,
+      ]);
       return { ...z, bibliotheque: tout.slice(garde), main: tout.slice(0, garde),
                terrain: [], cimetiere: [], exil: [] };
     });
     setTour(1);
   }, []);
 
-  const deplacer = useCallback((uid: string, vers: Zone, dessous = false) => {
-    setZones((z) => {
-      let carte: CarteJeu | undefined;
-      const suivant = { ...z };
-      for (const zone of Object.keys(z) as Zone[]) {
-        const i = z[zone].findIndex((c) => c.uid === uid);
-        if (i >= 0) {
-          carte = z[zone][i];
-          suivant[zone] = [...z[zone].slice(0, i), ...z[zone].slice(i + 1)];
-          break;
-        }
-      }
-      if (!carte) return z;
-      // Une carte quittant le champ de bataille revient toujours degagee.
-      const propre = { ...carte, engagee: vers === "terrain" ? carte.engagee : false };
-      suivant[vers] = dessous ? [...suivant[vers], propre] : [propre, ...suivant[vers]];
-      return suivant;
-    });
-  }, []);
-
-  const basculerEngagement = useCallback((uid: string) => {
-    setZones((z) => ({
-      ...z,
-      terrain: z.terrain.map((c) => (c.uid === uid ? { ...c, engagee: !c.engagee } : c)),
-    }));
-  }, []);
+  const degagerTout = useCallback(() => {
+    setZones((z) => ({ ...z, terrain: z.terrain.map((c) => ({ ...c, engagee: false })) }));
+    noter("degage tout");
+  }, [noter]);
 
   const tourSuivant = useCallback(() => {
     setZones((z) => ({ ...z, terrain: z.terrain.map((c) => ({ ...c, engagee: false })) }));
@@ -92,39 +125,88 @@ export default function Playtest({
     piocher(1);
   }, [piocher]);
 
-  const terrainsEngages = useMemo(
-    () => zones.terrain.filter((c) => c.engagee).length, [zones.terrain]);
+  const marqueur = useCallback((uid: string, delta: number) => {
+    setZones((z) => ({
+      ...z,
+      terrain: z.terrain.map((c) =>
+        c.uid === uid ? { ...c, marqueurs: Math.max(0, (c.marqueurs ?? 0) + delta) } : c),
+    }));
+  }, []);
 
-  const bouton = "rounded-md border border-bordure px-3 py-1.5 text-sm hover:brightness-125";
+  const creerJeton = useCallback(() => {
+    const nom = window.prompt("Nom du jeton", "Jeton 1/1");
+    if (!nom) return;
+    setZones((z) => ({
+      ...z,
+      terrain: [{ uid: `jeton-${Date.now()}`, nom, image: null, typeLigne: "Token",
+                  cmc: 0, engagee: false, jeton: true, x: 50, y: 50 }, ...z.terrain],
+    }));
+    noter(`cree ${nom}`);
+  }, [noter]);
+
+  // Raccourcis clavier : la souris seule rend le test fastidieux.
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.metaKey || e.ctrlKey) return;
+      const touches: Record<string, () => void> = {
+        d: () => piocher(1), n: tourSuivant, u: degagerTout,
+        m: () => { nouvelleMain(7); setMulligans((m) => m + 1); noter("mulligan"); },
+        s: () => { setZones((z) => ({ ...z, bibliotheque: melanger(z.bibliotheque) })); noter("melange"); },
+        t: creerJeton,
+        Escape: () => { setMenu(null); setPanneau(null); },
+      };
+      const f = touches[e.key];
+      if (f) { e.preventDefault(); f(); }
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [piocher, tourSuivant, degagerTout, nouvelleMain, noter, creerJeton]);
+
+  const terrains = useMemo(() => zones.terrain.filter(estTerrain).length, [zones.terrain]);
+  const bouton = "rounded-md border border-bordure bg-panneau px-3 py-1.5 text-sm hover:brightness-125";
+
+  /** Depot sur le champ de bataille : la carte se pose la ou on l'a lachee. */
+  function deposerSurChamp(e: React.DragEvent) {
+    e.preventDefault();
+    const uid = e.dataTransfer.getData("text/plain");
+    if (!uid || !champ.current) return;
+    const r = champ.current.getBoundingClientRect();
+    deplacer(uid, "terrain", {
+      x: Math.min(94, Math.max(0, ((e.clientX - r.left) / r.width) * 100)),
+      y: Math.min(86, Math.max(0, ((e.clientY - r.top) / r.height) * 100)),
+    });
+  }
 
   return (
-    <div className="space-y-4" onMouseLeave={() => setSurvol(null)}>
-      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-bordure bg-panneau p-3">
+    <div className="space-y-3" onClick={() => setMenu(null)}>
+      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-bordure bg-panneau p-2.5">
         <span className="text-sm">Tour <strong>{tour}</strong></span>
         <span className="flex items-center gap-1 text-sm">
           Vies
           <button onClick={() => setVies((v) => v - 1)} className="px-1 text-attenue">−</button>
-          <strong>{vies}</strong>
+          <strong className="w-7 text-center">{vies}</strong>
           <button onClick={() => setVies((v) => v + 1)} className="px-1 text-attenue">+</button>
         </span>
-        <span className="text-sm text-attenue">
-          {zones.bibliotheque.length} en bibliotheque · {terrainsEngages} engagees
+        <span className="text-xs text-attenue">
+          {zones.bibliotheque.length} en bibliotheque · {zones.main.length} en main · {terrains} terrains
         </span>
 
-        <div className="ml-auto flex flex-wrap gap-2">
-          <button className={bouton} onClick={() => piocher(1)}>Piocher</button>
-          <button className={bouton} onClick={tourSuivant}>Tour suivant</button>
+        <div className="ml-auto flex flex-wrap gap-1.5">
+          <button className={bouton} onClick={() => piocher(1)}>Piocher <kbd className="text-attenue">D</kbd></button>
+          <button className={bouton} onClick={tourSuivant}>Tour <kbd className="text-attenue">N</kbd></button>
+          <button className={bouton} onClick={degagerTout}>Degager <kbd className="text-attenue">U</kbd></button>
+          <button className={bouton} onClick={creerJeton}>Jeton <kbd className="text-attenue">T</kbd></button>
+          <button className={bouton}
+                  onClick={() => setPanneau({ titre: "Bibliotheque", cartes: zones.bibliotheque })}>
+            Chercher
+          </button>
+          <button className={bouton} onClick={() => meuler(1)}>Meuler</button>
           <button className={bouton}
                   onClick={() => { nouvelleMain(7); setMulligans(0); noter("nouvelle partie"); }}>
             Nouvelle main
           </button>
           <button className={bouton}
-                  onClick={() => {
-                    const g = Math.max(1, 7 - mulligans - 1);
-                    nouvelleMain(7);
-                    setMulligans((m) => m + 1);
-                    noter(`mulligan — ${g} carte(s) a garder`);
-                  }}>
+                  onClick={() => { nouvelleMain(7); setMulligans((m) => m + 1); noter("mulligan"); }}>
             Mulligan {mulligans > 0 && `(${mulligans})`}
           </button>
         </div>
@@ -132,93 +214,214 @@ export default function Playtest({
 
       {mulligans > 0 && (
         <p className="text-xs text-attenue">
-          Regle de Londres : tu pioches sept cartes puis en remets {mulligans} sous la
-          bibliotheque. Utilise « au-dessous » sur les cartes a rendre.
+          Regle de Londres : garde sept cartes, puis remets-en {mulligans} sous la bibliotheque
+          en les y faisant glisser.
         </p>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_16rem]">
-        <div className="space-y-4">
-          <Rangee titre="terrain" cartes={zones.terrain} zone="terrain"
-                  onCarte={basculerEngagement} onDeplacer={deplacer} onSurvol={setSurvol} />
-          <div className="grid gap-4 sm:grid-cols-3">
-            {(["cimetiere", "exil", "commandement"] as Zone[]).map((z) => (
-              <Rangee key={z} titre={z} cartes={zones[z]} zone={z} compact
-                      onDeplacer={deplacer} onSurvol={setSurvol} />
+      <div className="grid gap-3 xl:grid-cols-[1fr_15rem]">
+        <div className="space-y-3">
+          <div ref={champ}
+               onDragOver={(e) => e.preventDefault()}
+               onDrop={deposerSurChamp}
+               className="relative min-h-[26rem] rounded-lg border border-bordure bg-panneau p-2">
+            <span className="pointer-events-none absolute left-3 top-2 text-xs text-attenue">
+              {LIBELLES.terrain} · {zones.terrain.length}
+            </span>
+            {zones.terrain.length === 0 && (
+              <span className="pointer-events-none absolute inset-0 flex items-center justify-center text-sm text-attenue">
+                Fais glisser des cartes depuis ta main
+              </span>
+            )}
+            {zones.terrain.map((c) => (
+              <CarteSurChamp key={c.uid} carte={c}
+                             onEngager={() => setZones((z) => ({
+                               ...z, terrain: z.terrain.map((x) =>
+                                 x.uid === c.uid ? { ...x, engagee: !x.engagee } : x) }))}
+                             onMenu={(x, y) => setMenu({ uid: c.uid, zone: "terrain", x, y })}
+                             onSurvol={setSurvol} />
             ))}
           </div>
-          <Rangee titre="main" cartes={zones.main} zone="main"
-                  onDeplacer={deplacer} onSurvol={setSurvol} />
+
+          <div className="rounded-lg border border-bordure bg-panneau p-2"
+               onDragOver={(e) => e.preventDefault()}
+               onDrop={(e) => { e.preventDefault();
+                                deplacer(e.dataTransfer.getData("text/plain"), "main"); }}>
+            <p className="mb-1 text-xs text-attenue">{LIBELLES.main} · {zones.main.length}</p>
+            {zones.main.length === 0 ? (
+              <p className="py-8 text-center text-sm text-attenue">Main vide</p>
+            ) : (
+              <ul className="flex flex-wrap gap-2">
+                {zones.main.map((c) => (
+                  <li key={c.uid} draggable
+                      onDragStart={(e) => e.dataTransfer.setData("text/plain", c.uid)}
+                      onMouseEnter={() => setSurvol(c)}
+                      onContextMenu={(e) => { e.preventDefault();
+                                              setMenu({ uid: c.uid, zone: "main", x: e.clientX, y: e.clientY }); }}
+                      className="cursor-grab transition-transform hover:-translate-y-2">
+                    {c.image ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={c.image} alt={c.nom} className="rounded-[4.75%] border border-bordure"
+                           style={{ width: "var(--carte-l)" }} />
+                    ) : <span className="block rounded border border-bordure p-2 text-xs">{c.nom}</span>}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
 
-        <aside className="space-y-3">
+        <aside className="space-y-2">
           {survol?.image && (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={survol.image} alt={survol.nom}
                  className="w-full rounded-[4.75%] border border-bordure" />
           )}
-          <div className="rounded-lg border border-bordure bg-panneau p-3">
-            <p className="mb-2 text-sm font-medium">Journal</p>
-            <ul className="max-h-64 space-y-0.5 overflow-y-auto text-xs text-attenue">
+
+          {(["bibliotheque", "cimetiere", "exil", "commandement"] as Zone[]).map((z) => (
+            <div key={z}
+                 onDragOver={(e) => e.preventDefault()}
+                 onDrop={(e) => { e.preventDefault();
+                                  deplacer(e.dataTransfer.getData("text/plain"), z); }}
+                 onClick={() => zones[z].length > 0 &&
+                          setPanneau({ titre: LIBELLES[z], cartes: zones[z] })}
+                 className="flex cursor-pointer items-center gap-2 rounded-lg border border-bordure
+                            bg-panneau px-3 py-2 text-sm hover:brightness-125">
+              <span className="flex-1">{LIBELLES[z]}</span>
+              <span className="text-attenue">{zones[z].length}</span>
+            </div>
+          ))}
+
+          <div className="rounded-lg border border-bordure bg-panneau p-2">
+            <p className="mb-1 text-xs font-medium">Journal</p>
+            <ul className="max-h-48 space-y-0.5 overflow-y-auto text-[11px] text-attenue">
               {journal.length === 0 ? <li>Rien pour l&apos;instant.</li>
                 : journal.map((l, i) => <li key={i}>{l}</li>)}
             </ul>
           </div>
         </aside>
       </div>
+
+      {menu && (
+        <MenuCarte menu={menu} onDeplacer={deplacer} onMarqueur={marqueur}
+                   onFermer={() => setMenu(null)} />
+      )}
+
+      {panneau && (
+        <PanneauZone titre={panneau.titre} cartes={panneau.cartes}
+                     onPrendre={(uid) => { deplacer(uid, "main"); setPanneau(null); }}
+                     onFermer={() => setPanneau(null)} />
+      )}
     </div>
   );
 }
 
-function Rangee({
-  titre, cartes, zone, compact = false, onCarte, onDeplacer, onSurvol,
+function CarteSurChamp({
+  carte, onEngager, onMenu, onSurvol,
 }: {
-  titre: string; cartes: CarteJeu[]; zone: Zone; compact?: boolean;
-  onCarte?: (uid: string) => void;
-  onDeplacer: (uid: string, vers: Zone, dessous?: boolean) => void;
-  onSurvol: (c: CarteJeu | null) => void;
+  carte: CarteJeu; onEngager: () => void;
+  onMenu: (x: number, y: number) => void;
+  onSurvol: (c: CarteJeu) => void;
 }) {
-  const destinations: { z: Zone; libelle: string }[] = [
-    { z: "terrain", libelle: "jouer" }, { z: "main", libelle: "main" },
-    { z: "cimetiere", libelle: "cimetiere" }, { z: "exil", libelle: "exil" },
-    { z: "bibliotheque", libelle: "dessous" },
-  ];
-
   return (
-    <div className="rounded-lg border border-bordure bg-panneau p-3">
-      <p className="mb-2 text-sm font-medium">
-        {LIBELLES[zone] ?? titre} <span className="text-attenue">{cartes.length}</span>
-      </p>
-      {cartes.length === 0 ? (
-        <p className="py-4 text-center text-xs text-attenue">vide</p>
+    <div draggable
+         onDragStart={(e) => e.dataTransfer.setData("text/plain", carte.uid)}
+         onClick={(e) => { e.stopPropagation(); onEngager(); }}
+         onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); onMenu(e.clientX, e.clientY); }}
+         onMouseEnter={() => onSurvol(carte)}
+         className="absolute cursor-grab transition-transform"
+         style={{ left: `${carte.x ?? 50}%`, top: `${carte.y ?? 50}%`,
+                  transform: carte.engagee ? "rotate(90deg)" : undefined, zIndex: 1 }}>
+      {carte.image ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={carte.image} alt={carte.nom}
+             className={`rounded-[4.75%] border shadow-lg ${
+               carte.engagee ? "border-accent" : "border-bordure"}`}
+             style={{ width: "calc(var(--carte-l) * 0.85)" }} />
       ) : (
-        <ul className={`flex flex-wrap gap-2 ${compact ? "max-h-28 overflow-y-auto" : ""}`}>
-          {cartes.map((c) => (
-            <li key={c.uid} className="group relative" onMouseEnter={() => onSurvol(c)}>
-              {c.image ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={c.image} alt={c.nom} loading="lazy"
-                     onClick={() => onCarte?.(c.uid)}
-                     className={`rounded-[4.75%] border border-bordure transition-transform ${
-                       onCarte ? "cursor-pointer" : ""
-                     } ${c.engagee ? "rotate-90" : ""}`}
-                     style={{ width: compact ? 54 : 88 }} />
-              ) : (
-                <span className="block rounded border border-bordure p-1 text-[10px]">{c.nom}</span>
-              )}
-              <div className="absolute left-0 top-full z-10 hidden flex-col gap-0.5 rounded
-                              border border-bordure bg-panneau p-1 group-hover:flex">
-                {destinations.filter((d) => d.z !== zone).map((d) => (
-                  <button key={d.z} onClick={() => onDeplacer(c.uid, d.z, d.z === "bibliotheque")}
-                          className="whitespace-nowrap px-2 py-0.5 text-left text-[11px] hover:text-accent">
-                    {d.libelle}
-                  </button>
-                ))}
-              </div>
+        <span className="block rounded border border-accent bg-fond p-2 text-center text-[11px]"
+              style={{ width: "calc(var(--carte-l) * 0.85)" }}>
+          {carte.nom}
+        </span>
+      )}
+      {(carte.marqueurs ?? 0) > 0 && (
+        <span className="absolute -right-1 -top-1 rounded-full bg-accent px-1.5 text-xs font-bold text-accent-texte">
+          +{carte.marqueurs}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function MenuCarte({
+  menu, onDeplacer, onMarqueur, onFermer,
+}: {
+  menu: { uid: string; zone: Zone; x: number; y: number };
+  onDeplacer: (uid: string, vers: Zone) => void;
+  onMarqueur: (uid: string, delta: number) => void;
+  onFermer: () => void;
+}) {
+  const destinations: [Zone, string][] = [
+    ["terrain", "Jouer"], ["main", "En main"], ["cimetiere", "Cimetiere"],
+    ["exil", "Exiler"], ["bibliotheque", "Sous la bibliotheque"],
+  ];
+  return (
+    <div className="fixed z-50 min-w-44 rounded-md border border-bordure bg-panneau py-1 shadow-2xl"
+         style={{ left: menu.x, top: menu.y }}
+         onClick={(e) => e.stopPropagation()}>
+      {menu.zone === "terrain" && (
+        <div className="flex items-center gap-2 border-b border-bordure px-3 py-1.5 text-xs">
+          <span className="flex-1 text-attenue">Marqueurs</span>
+          <button onClick={() => onMarqueur(menu.uid, -1)} className="px-1.5">−</button>
+          <button onClick={() => onMarqueur(menu.uid, 1)} className="px-1.5">+</button>
+        </div>
+      )}
+      {destinations.filter(([z]) => z !== menu.zone).map(([z, libelle]) => (
+        <button key={z} onClick={() => { onDeplacer(menu.uid, z); onFermer(); }}
+                className="block w-full px-3 py-1.5 text-left text-xs hover:text-accent">
+          {libelle}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function PanneauZone({
+  titre, cartes, onPrendre, onFermer,
+}: {
+  titre: string; cartes: CarteJeu[];
+  onPrendre: (uid: string) => void; onFermer: () => void;
+}) {
+  const [filtre, setFiltre] = useState("");
+  const vues = cartes.filter((c) => c.nom.toLowerCase().includes(filtre.toLowerCase()));
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 p-6"
+         onClick={onFermer}>
+      <div className="w-full max-w-5xl rounded-xl border border-bordure bg-panneau p-4"
+           onClick={(e) => e.stopPropagation()}>
+        <div className="mb-3 flex items-center gap-3">
+          <h2 className="text-lg font-semibold">{titre}</h2>
+          <span className="text-sm text-attenue">{cartes.length} cartes</span>
+          <input value={filtre} onChange={(e) => setFiltre(e.target.value)}
+                 placeholder="Filtrer" className="ml-auto w-48 text-sm" />
+          <button onClick={onFermer} className="rounded-md border border-bordure px-3 py-1 text-sm">
+            Fermer
+          </button>
+        </div>
+        <ul className="grid max-h-[70vh] grid-cols-4 gap-2 overflow-y-auto sm:grid-cols-6 lg:grid-cols-8">
+          {vues.map((c) => (
+            <li key={c.uid}>
+              <button onClick={() => onPrendre(c.uid)} className="block w-full" title="Mettre en main">
+                {c.image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={c.image} alt={c.nom} loading="lazy"
+                       className="w-full rounded-[4.75%] border border-bordure hover:border-accent" />
+                ) : <span className="block rounded border border-bordure p-2 text-xs">{c.nom}</span>}
+              </button>
             </li>
           ))}
         </ul>
-      )}
+      </div>
     </div>
   );
 }

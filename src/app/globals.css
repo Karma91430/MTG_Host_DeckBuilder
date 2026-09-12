@@ -7,6 +7,8 @@
      document entier, la ou un theme de deck ne colore que son conteneur. */
   --fond: #181d26; --panneau: #222933; --bordure: #38424f;
   --texte: #e8eef5; --attenue: #9aa7b6; --accent: #e09a4f; --accent-texte: #181d26;
+  /* Largeur d'une carte, pilotee par le reglage de taille. */
+  --carte-l: 126px;
 }
 
 @theme inline {

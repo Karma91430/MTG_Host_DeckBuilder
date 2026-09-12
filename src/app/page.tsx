@@ -65,7 +65,7 @@ export default async function Accueil() {
                 {dossier || "Sans dossier"}
               </h2>
             )}
-            <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+            <ul className="grid gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
               {liste.map((d) => {
                 const t = theme(d.theme);
                 const carte = d.commandant ? visuels.get(d.commandant) : undefined;
@@ -77,7 +77,7 @@ export default async function Accueil() {
                           className="group block overflow-hidden rounded-xl border shadow-lg transition
                                      hover:-translate-y-0.5 hover:shadow-xl"
                           style={{ borderColor: t.couleurs.bordure, background: t.couleurs.panneau }}>
-                      <div className="relative h-40 overflow-hidden" style={{ background: t.couleurs.fond }}>
+                      <div className="relative h-24 overflow-hidden" style={{ background: t.couleurs.fond }}>
                         {art ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={art} alt="" loading="lazy"
@@ -86,20 +86,20 @@ export default async function Accueil() {
                         {/* Degrade pour que le titre reste lisible sur toute illustration. */}
                         <div className="absolute inset-0"
                              style={{ background: `linear-gradient(to top, ${t.couleurs.panneau} 8%, transparent 70%)` }} />
-                        <div className="absolute left-4 top-3 flex items-center gap-2">
+                        <div className="absolute left-3 top-2 flex items-center gap-1.5">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={symboleExtension(t.set)} alt="" width={18} height={18}
+                          <img src={symboleExtension(t.set)} alt="" width={14} height={14}
                                className="symbole-extension" />
-                          <span className="text-[11px] uppercase tracking-wide drop-shadow"
+                          <span className="text-[10px] uppercase tracking-wide drop-shadow"
                                 style={{ color: t.couleurs.accent }}>{t.nom}</span>
                         </div>
                       </div>
 
-                      <div className="space-y-1 p-4 pt-2">
-                        <p className="truncate text-lg font-semibold" style={{ color: t.couleurs.texte }}>
+                      <div className="space-y-0.5 p-3 pt-2">
+                        <p className="truncate text-sm font-semibold" style={{ color: t.couleurs.texte }}>
                           {d.name}
                         </p>
-                        <p className="text-sm capitalize" style={{ color: t.couleurs.attenue }}>
+                        <p className="truncate text-xs capitalize" style={{ color: t.couleurs.attenue }}>
                           {d.format} · {d.cartes} cartes
                           {carte && ` · ${carte.name}`}
                         </p>
