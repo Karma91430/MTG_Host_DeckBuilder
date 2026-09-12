@@ -18,6 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </Link>
             <nav className="flex gap-4 text-sm text-attenue">
               <Link href="/" className="hover:text-texte">Mes decks</Link>
+              <Link href="/comparer" className="hover:text-texte">Comparer</Link>
             </nav>
             <span className="ml-auto text-xs text-attenue">
               Donnees et visuels fournis par Scryfall

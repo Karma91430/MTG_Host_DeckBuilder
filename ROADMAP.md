@@ -3,9 +3,63 @@
 Ce qui existe est decrit dans le README. Ce document recense ce qui manque
 encore, par valeur decroissante, avec ce que chaque chantier suppose.
 
+## Chantiers livres
+
+Les quatre premiers chantiers de cet inventaire sont faits et decrits dans le
+README : suggestions de cartes, choix de l edition, comparaison de deux decks,
+estimation de puissance. Ce qui suit est ce qui reste.
+
 ---
 
-## 1. Suggestions de cartes pour un deck
+## 1. Gestion de collection
+
+Aujourd hui chaque carte porte un statut d acquisition au sein d un deck. Une
+vraie collection serait transverse : ce qu on possede, en combien
+d exemplaires, et ce qui manque pour monter tel deck. Suppose une table dediee,
+un import de collection, et une reconciliation avec les decks.
+
+Le selecteur d edition rend le sujet plus interessant qu avant : une collection
+se compte par tirage, pas seulement par nom.
+
+---
+
+## 2. Playtest a deux mains
+
+Simuler un adversaire, ou au moins une seconde main, pour tester des
+interactions plutot que de faire tourner le deck a vide. Demande de repenser
+l etat de la partie, aujourd hui concu pour un seul joueur.
+
+---
+
+## 3. Historique des versions d un deck
+
+L annulation couvre la session en cours sur quarante pas. Un historique
+nomme -- « avant refonte terrains », « version tournoi » -- permettrait de
+revenir a un etat ancien et de comparer. La table d instantanes existe deja, il
+s agirait de la rendre durable et nommable.
+
+La comparaison de decks fournit deja la vue : il suffirait de lui passer deux
+instantanes au lieu de deux decks.
+
+---
+
+## 4. Calibrage des seuils de suggestion
+
+Les seuils sont reglables mais leurs valeurs par defaut n ont ete eprouvees que
+sur quelques decks. Un travail de calibrage, format par format, rendrait les
+suggestions nettement plus justes -- en particulier les cibles de rampe, de
+pioche et de removal, qui varient beaucoup selon le rythme du deck.
+
+---
+
+## Pour memoire : ce qui etait prevu pour les chantiers livres
+
+Le raisonnement de depart est conserve : il documente les choix faits,
+notamment la question des seuils, qui reste ouverte.
+
+---
+
+## Livre — Suggestions de cartes pour un deck
 
 La fonctionnalite la plus utile qui manque, et la plus interessante a
 construire. L idee : repondre a « que mettre dans ce deck ? » a partir de ce
@@ -68,7 +122,7 @@ vraiment ? Ces valeurs devront etre reglables, et discutees.
 
 ---
 
-## 2. Choix de l edition d une carte
+## Livre — Choix de l edition d une carte
 
 Selectionner le tirage precis : illustration alternative, edition d origine,
 version etendue. Scryfall expose les impressions d une carte par une requete
@@ -79,7 +133,7 @@ Fonctionnalite tres visible, d un cout modere.
 
 ---
 
-## 3. Comparaison de deux decks
+## Livre — Comparaison de deux decks
 
 Ce qu ils partagent, ce qui les distingue, l ecart de courbe et de prix. Utile
 pour suivre l evolution d une liste ou comparer deux versions d un meme deck.
@@ -87,39 +141,13 @@ Purement local, aucun appel supplementaire.
 
 ---
 
-## 4. Estimation de puissance
+## Livre — Estimation de puissance
 
 Situer un deck sur une echelle de puissance, comme le font les paliers
 Commander. Les signaux existent -- tuteurs, rapidites, combos connus, cout moyen,
 densite de removal -- mais le resultat reste subjectif et demande un travail de
 calibrage serieux. A ne tenter qu apres les suggestions, dont il reutiliserait
 l analyse.
-
----
-
-## 5. Gestion de collection
-
-Aujourd hui chaque carte porte un statut d acquisition au sein d un deck. Une
-vraie collection serait transverse : ce qu on possede, en combien
-d exemplaires, et ce qui manque pour monter tel deck. Suppose une table dediee,
-un import de collection, et une reconciliation avec les decks.
-
----
-
-## 6. Playtest a deux mains
-
-Simuler un adversaire, ou au moins une seconde main, pour tester des
-interactions plutot que de faire tourner le deck a vide. Demande de repenser
-l etat de la partie, aujourd hui concu pour un seul joueur.
-
----
-
-## 7. Historique des versions d un deck
-
-L annulation couvre la session en cours sur quarante pas. Un historique
-nomme -- « avant refonte terrains », « version tournoi » -- permettrait de
-revenir a un etat ancien et de comparer. La table d instantanes existe deja, il
-s agirait de la rendre durable et nommable.
 
 ---
 

@@ -7,3 +7,6 @@ data
 
 # Le compose reel est propre a chaque machine.
 docker-compose.yml
+
+# Cache du compilateur TypeScript en mode incremental.
+tsconfig.tsbuildinfo

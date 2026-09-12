@@ -73,7 +73,6 @@ export default function Playtest({
   const [tour, setTour] = useState(1);
   const [vies, setVies] = useState(commandants.length > 0 ? 40 : 20);
   const [mulligans, setMulligans] = useState(0);
-  const [survol, setSurvol] = useState<CarteJeu | null>(null);
   const [menu, setMenu] = useState<{ uid: string; zone: Zone; x: number; y: number } | null>(null);
   const [panneau, setPanneau] = useState<{ titre: string; cartes: CarteJeu[] } | null>(null);
   const [menuPlateau, setMenuPlateau] = useState<{ x: number; y: number } | null>(null);
@@ -326,7 +325,7 @@ export default function Playtest({
                                ...z, terrain: z.terrain.map((x) =>
                                  x.uid === c.uid ? { ...x, engagee: !x.engagee } : x) }))}
                              onMenu={(x, y) => setMenu({ uid: c.uid, zone: "terrain", x, y })}
-                             onSurvol={setSurvol} />
+                             />
             ))}
           </div>
 
@@ -352,7 +351,6 @@ export default function Playtest({
                   {zones.main.map((c, i) => (
                     <li key={c.uid} draggable
                         onDragStart={(e) => e.dataTransfer.setData("text/plain", c.uid)}
-                        onMouseEnter={() => setSurvol(c)}
                         onClick={() => jouer(c.uid)}
                         title="Cliquer pour jouer, ou faire glisser pour placer soi-meme"
                         onContextMenu={(e) => { e.preventDefault(); e.stopPropagation();
@@ -396,14 +394,6 @@ export default function Playtest({
           </div>
         </div>
 
-      {survol?.image && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={survol.image} alt={survol.nom}
-             className="pointer-events-none fixed bottom-4 right-4 z-40 rounded-[4.75%]
-                        border border-bordure shadow-2xl"
-             style={{ width: "calc(var(--carte-l) * 1.15)" }} />
-      )}
-
       {menuPlateau && (
         <MenuPlateau x={menuPlateau.x} y={menuPlateau.y} jetons={jetons}
                      onTourSuivant={() => { tourSuivant(); setMenuPlateau(null); }}
@@ -439,18 +429,16 @@ function Groupe({ titre, children }: { titre: string; children: React.ReactNode 
 }
 
 function CarteSurChamp({
-  carte, onEngager, onMenu, onSurvol,
+  carte, onEngager, onMenu,
 }: {
   carte: CarteJeu; onEngager: () => void;
   onMenu: (x: number, y: number) => void;
-  onSurvol: (c: CarteJeu) => void;
 }) {
   return (
     <div draggable
          onDragStart={(e) => e.dataTransfer.setData("text/plain", carte.uid)}
          onClick={(e) => { e.stopPropagation(); onEngager(); }}
          onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); onMenu(e.clientX, e.clientY); }}
-         onMouseEnter={() => onSurvol(carte)}
          className="absolute cursor-grab transition-transform"
          style={{ left: `${carte.x ?? 50}%`, top: `${carte.y ?? 50}%`,
                   transform: carte.engagee ? "rotate(90deg)" : undefined, zIndex: 1 }}>

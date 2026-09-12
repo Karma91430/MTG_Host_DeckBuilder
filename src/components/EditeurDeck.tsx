@@ -13,6 +13,7 @@ import ImportExport from "./ImportExport";
 import FicheCarte from "./FicheCarte";
 import TailleCartes from "./TailleCartes";
 import ReglagesDeck from "./ReglagesDeck";
+import Suggestions from "./Suggestions";
 
 type Deck = { id: string; name: string; format: string; description: string;
               theme: string; folder: string; tags: string };
@@ -129,6 +130,10 @@ export default function EditeurDeck({
             </span>
             <ImportExport deckId={deck.id} />
             <ReglagesDeck deckId={deck.id} folder={deck.folder} tags={deck.tags} />
+            <Link href={`/comparer?a=${deck.id}`}
+                  className="rounded-md border border-bordure bg-panneau px-3 py-2 text-sm">
+              Comparer
+            </Link>
             <Link href={`/decks/${deck.id}/playtest`}
                   className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-texte">
               Tester
@@ -183,7 +188,10 @@ export default function EditeurDeck({
           )}
         </section>
 
-        <PanneauAnalyse entrees={entrees} stats={stats} problemes={problemes} />
+        <Suggestions deckId={deck.id} onAjouter={(carte, zone) => void ajouter(carte, zone)} />
+
+        <PanneauAnalyse entrees={entrees} stats={stats} problemes={problemes}
+                        format={deck.format} />
       </div>
 
       {fiche && (

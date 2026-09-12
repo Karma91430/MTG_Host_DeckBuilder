@@ -4,6 +4,17 @@ import { useMemo } from "react";
 import { analyserMana, symboleMana } from "@/lib/mana";
 import { profilMain, repartitionTerrains } from "@/lib/probabilites";
 import { categorieType, type EntreeResolue, type Stats, type Probleme } from "@/lib/deck";
+import { estimerPuissance } from "@/lib/puissance";
+
+/**
+ * Pourcentage arrondi pour un style en ligne.
+ *
+ * Sans arrondi, le serveur ecrit « 90.54570231460762% » la ou le navigateur
+ * normalise a « 90.5457% » : React y voit une divergence d'hydratation et le
+ * signale a chaque rendu.
+ */
+const pourcent = (fraction: number) => `${Math.round(fraction * 10000) / 100}%`;
+const pixels = (valeur: number) => `${Math.round(valeur * 100) / 100}px`;
 
 /** Fourchette de terrains consideree comme gardable en main de depart. */
 const GARDABLE = [2, 3, 4, 5];
@@ -18,9 +29,10 @@ const GARDABLE = [2, 3, 4, 5];
  * l'information.
  */
 export default function PanneauAnalyse({
-  entrees, stats, problemes,
-}: { entrees: EntreeResolue[]; stats: Stats; problemes: Probleme[] }) {
+  entrees, stats, problemes, format,
+}: { entrees: EntreeResolue[]; stats: Stats; problemes: Probleme[]; format: string }) {
   const mana = useMemo(() => analyserMana(entrees), [entrees]);
+  const puissance = useMemo(() => estimerPuissance(entrees, format), [entrees, format]);
 
   const { taille, profil, terrainsRep, gardable } = useMemo(() => {
     const biblio = entrees.filter((e) => e.zone === "main");
@@ -74,6 +86,39 @@ export default function PanneauAnalyse({
                detail={problemes[0]?.texte ?? "taille, exemplaires et identite couleur verifies"} />
       </div>
 
+      {puissance && (
+        <Bloc titre="Puissance estimee"
+              aide="Une indication, pas un verdict : la puissance depend aussi de la table et du pilote.">
+          <div className="flex flex-wrap items-start gap-5">
+            <div className="shrink-0">
+              <p className="text-4xl font-semibold" style={{ color: "var(--accent)" }}>
+                {puissance.note.toFixed(1)}
+                <span className="text-lg font-normal text-attenue"> / 10</span>
+              </p>
+              <p className="text-sm font-medium">{puissance.palier}</p>
+            </div>
+            <p className="min-w-0 flex-1 text-sm text-attenue">{puissance.resume}</p>
+          </div>
+
+          <ul className="mt-4 space-y-2">
+            {puissance.axes.map((axe) => (
+              <li key={axe.nom} className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span className="w-52 shrink-0 text-sm">{axe.nom}</span>
+                <span className="w-36 shrink-0 text-xs tabular-nums text-attenue">{axe.mesure}</span>
+                <span className="h-2 min-w-0 flex-1 rounded-full bg-bordure">
+                  <span className="block h-2 rounded-full"
+                        style={{ width: pourcent(axe.part), minWidth: axe.part > 0 ? 4 : 0,
+                                 background: "var(--accent)" }} />
+                </span>
+                <span className="w-full text-[11px] text-attenue sm:w-auto sm:basis-full sm:pl-52">
+                  {axe.commentaire}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Bloc>
+      )}
+
       <div className="grid gap-4 xl:grid-cols-[1.15fr_1fr]">
         <Bloc titre="Courbe de mana"
               aide="Repartition des couts, terrains exclus — ils ecraseraient la colonne zero.">
@@ -83,7 +128,7 @@ export default function PanneauAnalyse({
                 <span className="text-xs font-medium tabular-nums"
                       style={{ opacity: c.n > 0 ? 1 : 0.3 }}>{c.n}</span>
                 <div className="w-full rounded-t"
-                     style={{ height: `${(c.n / maxCourbe) * 108}px`,
+                     style={{ height: pixels((c.n / maxCourbe) * 108),
                               minHeight: c.n > 0 ? 4 : 1,
                               background: c.n > 0 ? "var(--accent)" : "var(--bordure)" }}
                      title={`${c.n} carte(s) a ${c.cout === 7 ? "7 ou plus" : c.cout}`} />
@@ -110,11 +155,11 @@ export default function PanneauAnalyse({
                        width={20} height={20} className="shrink-0" />
                   <span className="min-w-0 flex-1 space-y-1">
                     <span className="block h-2.5 rounded" title={`${l.pips} symboles demandes`}
-                          style={{ width: `${(l.pips / maxMana) * 100}%`,
+                          style={{ width: pourcent(l.pips / maxMana),
                                    minWidth: l.pips > 0 ? 4 : 0,
                                    background: "var(--accent)" }} />
                     <span className="block h-2.5 rounded border" title={`${l.sources} sources`}
-                          style={{ width: `${(l.sources / maxMana) * 100}%`,
+                          style={{ width: pourcent(l.sources / maxMana),
                                    minWidth: l.sources > 0 ? 4 : 0,
                                    borderColor: "var(--accent)" }} />
                   </span>
@@ -137,7 +182,7 @@ export default function PanneauAnalyse({
                 <span className="w-28 shrink-0 truncate text-sm text-attenue">{t.nom}</span>
                 <span className="h-2.5 flex-1 rounded bg-fond">
                   <span className="block h-full rounded" title={`${t.n} cartes`}
-                        style={{ width: `${(t.n / maxType) * 100}%`, background: "var(--accent)" }} />
+                        style={{ width: pourcent(t.n / maxType), background: "var(--accent)" }} />
                 </span>
                 <span className="w-8 shrink-0 text-right text-sm tabular-nums">{t.n}</span>
               </li>
@@ -158,7 +203,7 @@ export default function PanneauAnalyse({
                   <span className="h-2 flex-1 rounded bg-fond">
                     <span className="block h-full rounded"
                           title={`${Math.round(l.auMoins1 * 100)} % d'en avoir au moins une`}
-                          style={{ width: `${l.auMoins1 * 100}%`, background: "var(--accent)" }} />
+                          style={{ width: pourcent(l.auMoins1), background: "var(--accent)" }} />
                   </span>
                 </li>
               ))}
@@ -180,7 +225,7 @@ export default function PanneauAnalyse({
                   <div key={t.k} className="flex flex-1 flex-col items-center gap-1">
                     <div className="w-full rounded-t"
                          title={`${t.k} terrain(s) : ${Math.round(t.chance * 100)} %`}
-                         style={{ height: `${(t.chance / maxRep) * 62}px`,
+                         style={{ height: pixels((t.chance / maxRep) * 62),
                                   minHeight: t.chance > 0.005 ? 3 : 1,
                                   background: GARDABLE.includes(t.k) ? "var(--accent)" : "var(--bordure)" }} />
                     <span className="text-[10px] text-attenue">{t.k}</span>

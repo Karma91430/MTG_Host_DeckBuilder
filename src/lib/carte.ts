@@ -28,6 +28,33 @@ export type Carte = {
   all_parts?: { id: string; component: string; name: string; type_line?: string }[];
   prices?: Record<string, string | null>;
   scryfall_uri: string;
+
+  /** Rang de popularite en Commander. Plus il est bas, plus la carte est jouee. */
+  edhrec_rank?: number;
+  /** Adresse Scryfall listant toutes les impressions de la carte. */
+  prints_search_uri?: string;
+
+  // Ce qui distingue une impression d'une autre, pour le selecteur d'edition.
+  collector_number?: string;
+  released_at?: string;
+  promo?: boolean;
+  digital?: boolean;
+  frame_effects?: string[];
+  border_color?: string;
+  lang?: string;
+};
+
+/** Une impression precise d'une carte, telle que la presente le selecteur. */
+export type Impression = {
+  id: string;
+  set: string;
+  set_name: string;
+  collector_number: string;
+  released_at: string;
+  image: string | null;
+  prix: string | null;
+  promo: boolean;
+  effets: string[];
 };
 
 /** Illustration d'une carte, y compris pour les cartes recto-verso. */

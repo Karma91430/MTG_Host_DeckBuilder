@@ -18,6 +18,61 @@ Trois zones d accueil pour une carte : le deck, la zone de commandement, ou une
 liste « a voir » pour ce qu on hesite a inclure. Une carte n appartient qu a une
 seule zone : l y rajouter ailleurs la deplace au lieu de la dupliquer.
 
+### Choix de l edition
+
+Chaque carte existe souvent en dix tirages : edition d origine, reimpression,
+illustration alternative, cadre etendu. La fiche detaillee les presente tous et
+le deck retient l identifiant du tirage choisi, si bien que la liste, le
+playtest et l export montrent la meme version.
+
+Le changement de tirage respecte la regle « une carte, une seule zone » : la
+comparaison porte sur le nom et non sur l identifiant, sans quoi un commandant
+reapparaitrait dans le deck des qu on lui choisit une autre edition.
+
+### Suggestions
+
+Un panneau repond a « que mettre dans ce deck ? » a partir de ce que le deck
+raconte deja de lui-meme. Il lit cinq signaux :
+
+- l **identite couleur** du commandant, qui borne toute suggestion ;
+- les **sous-types dominants** : huit Elfes et le theme est nomme ;
+- les **motifs de texte recurrents** -- jetons, sacrifice, cimetiere, +1/+1,
+  artefacts, blink, vol, soins, degats directs, defausse ;
+- les **creux de courbe** dans les couts bas, rapportes au nombre de sorts ;
+- les **manques de mana**, quand la demande d une couleur depasse nettement ses
+  sources.
+
+Chaque manque devient une requete Scryfall, classee par popularite en Commander
+(`edhrec_rank`). Les propositions sont groupees par manque, jamais en liste
+plate : une carte ne vaut que par la raison qui la fait apparaitre. On ajoute au
+deck ou a la liste « a voir » d un clic, et on ecarte ce qu on ne veut plus voir.
+
+Les seuils -- a partir de combien de cartes un sous-type devient un theme,
+combien de rampe on attend -- sont des choix editoriaux, pas des verites : ils
+sont reglables depuis le panneau et memorises. Les comptes attendus sont ramenes
+a la taille reelle du deck, pour qu une liste a moitie construite ne soit pas
+jugee sur les cibles d un deck complet.
+
+### Puissance estimee
+
+Une note sur dix et un palier -- Detente, Milieu de table, Optimise, Haute
+puissance, Competitif -- accompagnes du detail de chaque signal : acceleration
+et mana rapide, cout moyen, interaction, tuteurs, sorts gratuits, densite de
+cartes de reference. La contribution de chaque axe est montree, parce qu une
+note sans son raisonnement ne se discute pas.
+
+C est une indication, pas un verdict : la puissance depend aussi de la table et
+du pilote. Aucune base de combos n est utilisee -- elle supposerait une
+dependance externe a maintenir.
+
+### Comparer deux decks
+
+Trois colonnes : ce qui est propre au premier, ce qu ils partagent, ce qui est
+propre au second. Avec le taux de recouvrement, l ecart de courbe, les symboles
+de mana reclames de part et d autre, et la comparaison des notes de puissance.
+Utile pour suivre l evolution d une liste ou departager deux versions. Tout est
+calcule localement, sans appel supplementaire.
+
 ### Organisation
 
 Trois affichages : grille, colonnes empilees par categorie, ou liste. Groupement

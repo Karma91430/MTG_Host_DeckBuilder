@@ -1,7 +1,8 @@
 import { db } from "./db";
-import type { Carte } from "./carte";
+import type { Carte, Impression } from "./carte";
+import { imageDe as imageDeCarte } from "./carte";
 
-export type { Carte } from "./carte";
+export type { Carte, Impression } from "./carte";
 export { imageDe } from "./carte";
 
 /**
@@ -38,11 +39,80 @@ async function appel<T>(chemin: string): Promise<T> {
   return (await res.json()) as T;
 }
 
-export async function chercher(requete: string, page = 1) {
+/**
+ * Recherche de cartes.
+ *
+ * L'ordre par defaut reste alphabetique, celui qu'on attend d'une recherche
+ * manuelle. Les suggestions demandent au contraire l'ordre de popularite, que
+ * Scryfall expose sous le nom « edhrec ».
+ */
+export async function chercher(
+  requete: string,
+  page = 1,
+  ordre: "name" | "edhrec" | "released" | "cmc" = "name",
+) {
   const q = encodeURIComponent(requete);
   return appel<{ data: Carte[]; total_cards: number; has_more: boolean }>(
-    `/cards/search?q=${q}&page=${page}&unique=cards&order=name`,
+    `/cards/search?q=${q}&page=${page}&unique=cards&order=${ordre}`,
   );
+}
+
+/**
+ * Recherche tolerante : une requete sans resultat n'est pas une erreur.
+ *
+ * Les suggestions lancent une requete par manque detecte. Certaines ne
+ * ramenent rien -- il n existe pas toujours de carte a deux manas repondant a
+ * la mecanique du deck -- et cela ne doit pas faire echouer tout le panneau.
+ */
+export async function chercherOuRien(
+  requete: string,
+  ordre: "name" | "edhrec" | "released" | "cmc" = "edhrec",
+): Promise<Carte[]> {
+  try {
+    const { data } = await chercher(requete, 1, ordre);
+    for (const c of data) memoriser(c);
+    return data;
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Toutes les impressions d'une carte, de la plus recente a la plus ancienne.
+ *
+ * Scryfall donne sur chaque carte l'adresse de cette recherche ; on la refait
+ * nous-memes a partir du nom exact pour ne pas dependre d'un champ absent des
+ * entrees mises en cache avant cette fonctionnalite.
+ */
+export async function impressions(c: Carte): Promise<Impression[]> {
+  const requete = `!"${c.name.replace(/"/g, "")}" game:paper`;
+  const q = encodeURIComponent(requete);
+  const tirages: Carte[] = [];
+  try {
+    // Deux pages suffisent : au-dela de 350 tirages, la liste n'aide plus.
+    for (let page = 1; page <= 2; page++) {
+      const r = await appel<{ data: Carte[]; has_more: boolean }>(
+        `/cards/search?q=${q}&page=${page}&unique=prints&order=released`,
+      );
+      tirages.push(...r.data);
+      if (!r.has_more) break;
+    }
+  } catch {
+    return [];
+  }
+
+  for (const t of tirages) memoriser(t);
+  return tirages.map((t) => ({
+    id: t.id,
+    set: t.set,
+    set_name: t.set_name,
+    collector_number: t.collector_number ?? "",
+    released_at: t.released_at ?? "",
+    image: imageDeCarte(t, "normal"),
+    prix: t.prices?.eur ?? t.prices?.usd ?? null,
+    promo: Boolean(t.promo),
+    effets: t.frame_effects ?? [],
+  }));
 }
 
 /** Recupere une carte, depuis le cache local si elle y est deja. */

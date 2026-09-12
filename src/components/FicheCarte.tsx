@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { imageDe, type Carte } from "@/lib/carte";
 import { ACQUISITION, CATEGORIES } from "@/lib/categories";
 import type { EntreeResolue } from "@/lib/deck";
+import ChoixEdition from "./ChoixEdition";
 
 const FORMATS_AFFICHES = ["commander", "standard", "modern", "pioneer", "legacy", "pauper"];
 const ACQUIS_LIBELLES: Record<string, string> = {
@@ -57,6 +58,8 @@ export default function FicheCarte({
                 Retourner la carte
               </button>
             )}
+            <ChoixEdition cardId={c.id} actuel={c.id}
+                          onChoisir={(idTirage) => onModifier(entree.id, { cardId: idTirage })} />
             <a href={c.scryfall_uri} target="_blank" rel="noreferrer"
                className="block text-center text-xs text-attenue hover:text-accent">
               Voir sur Scryfall
