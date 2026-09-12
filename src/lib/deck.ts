@@ -1,4 +1,4 @@
-import type { Carte } from "./scryfall";
+import type { Carte } from "./carte";
 
 export type Entree = { id: string; card_id: string; quantity: number; zone: string; category: string };
 export type EntreeResolue = Entree & { carte: Carte };

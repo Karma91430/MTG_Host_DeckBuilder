@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Carte } from "@/lib/scryfall";
+import type { Carte } from "@/lib/carte";
 
 const EXEMPLES = [
   { texte: "t:creature c:g cmc<=3", aide: "creatures vertes a 3 manas ou moins" },

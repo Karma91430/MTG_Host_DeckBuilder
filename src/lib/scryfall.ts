@@ -1,4 +1,8 @@
 import { db } from "./db";
+import type { Carte } from "./carte";
+
+export type { Carte } from "./carte";
+export { imageDe } from "./carte";
 
 /**
  * Acces a l'API Scryfall.
@@ -32,31 +36,6 @@ async function appel<T>(chemin: string): Promise<T> {
     throw new Error((detail as { details?: string }).details ?? `Scryfall ${res.status}`);
   }
   return (await res.json()) as T;
-}
-
-export type Carte = {
-  id: string;
-  name: string;
-  mana_cost?: string;
-  cmc: number;
-  type_line: string;
-  oracle_text?: string;
-  colors?: string[];
-  color_identity: string[];
-  set: string;
-  set_name: string;
-  rarity: string;
-  image_uris?: { small: string; normal: string; large: string; art_crop: string };
-  card_faces?: { name: string; mana_cost?: string; oracle_text?: string; type_line?: string;
-                 image_uris?: { small: string; normal: string; large: string; art_crop: string } }[];
-  legalities: Record<string, string>;
-  prices?: Record<string, string | null>;
-  scryfall_uri: string;
-};
-
-/** Illustration d'une carte, y compris pour les cartes recto-verso. */
-export function imageDe(c: Carte, taille: "small" | "normal" | "large" = "normal"): string | null {
-  return c.image_uris?.[taille] ?? c.card_faces?.[0]?.image_uris?.[taille] ?? null;
 }
 
 export async function chercher(requete: string, page = 1) {
@@ -109,6 +88,40 @@ export async function cartes(ids: string[]): Promise<Map<string, Carte>> {
     for (const c of data) { memoriser(c); trouvees.set(c.id, c); }
   }
   return trouvees;
+}
+
+/**
+ * Resout des cartes par leur nom, pour l'import d'une liste collee.
+ *
+ * L'API accepte des identifiants par nom exact et renvoie separement ce
+ * qu'elle n'a pas trouve : on peut donc signaler les lignes fautives au lieu
+ * d'abandonner tout l'import.
+ */
+export async function parNoms(noms: string[]): Promise<{
+  trouvees: Map<string, Carte>;
+  introuvables: string[];
+}> {
+  const trouvees = new Map<string, Carte>();
+  const introuvables: string[] = [];
+
+  for (let i = 0; i < noms.length; i += 75) {
+    const lot = noms.slice(i, i + 75);
+    await patienter();
+    const res = await fetch(`${BASE}/cards/collection`, {
+      method: "POST",
+      headers: { "User-Agent": UA, "Content-Type": "application/json" },
+      body: JSON.stringify({ identifiers: lot.map((name) => ({ name })) }),
+    });
+    if (!res.ok) { introuvables.push(...lot); continue; }
+    const data = (await res.json()) as
+      { data: Carte[]; not_found?: { name?: string }[] };
+    for (const c of data.data) {
+      memoriser(c);
+      trouvees.set(c.name.toLowerCase(), c);
+    }
+    for (const nf of data.not_found ?? []) if (nf.name) introuvables.push(nf.name);
+  }
+  return { trouvees, introuvables };
 }
 
 export async function extensions() {
