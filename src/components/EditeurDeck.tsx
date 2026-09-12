@@ -7,13 +7,10 @@ import { imageDe, type Carte } from "@/lib/carte";
 import type { EntreeResolue, Stats, Probleme } from "@/lib/deck";
 import { THEMES, symboleExtension, theme } from "@/lib/themes";
 import RechercheCartes from "./RechercheCartes";
-import Statistiques from "./Statistiques";
 import ListeDeck from "./ListeDeck";
+import PanneauAnalyse from "./PanneauAnalyse";
 import ImportExport from "./ImportExport";
 import FicheCarte from "./FicheCarte";
-import MainDepart from "./MainDepart";
-import AnalyseMana from "./AnalyseMana";
-import EtatDeck from "./EtatDeck";
 import TailleCartes from "./TailleCartes";
 import ReglagesDeck from "./ReglagesDeck";
 
@@ -186,12 +183,7 @@ export default function EditeurDeck({
           )}
         </section>
 
-        <aside className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <Statistiques stats={stats} />
-          <AnalyseMana entrees={entrees} />
-          <MainDepart entrees={entrees} />
-          <EtatDeck entrees={entrees} problemes={problemes} />
-        </aside>
+        <PanneauAnalyse entrees={entrees} stats={stats} problemes={problemes} />
       </div>
 
       {fiche && (

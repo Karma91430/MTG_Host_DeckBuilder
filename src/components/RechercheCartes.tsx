@@ -3,15 +3,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Carte } from "@/lib/carte";
 import { imageDe } from "@/lib/carte";
+import { symboleMana, NOMS } from "@/lib/mana";
 
-const COULEURS: { code: string; nom: string; teinte: string }[] = [
-  { code: "W", nom: "Blanc", teinte: "#e8e0c8" },
-  { code: "U", nom: "Bleu", teinte: "#3b7dd8" },
-  { code: "B", nom: "Noir", teinte: "#6b5b7b" },
-  { code: "R", nom: "Rouge", teinte: "#d84f3b" },
-  { code: "G", nom: "Vert", teinte: "#3f9455" },
-  { code: "C", nom: "Incolore", teinte: "#9a9a9a" },
-];
+const CODES_COULEURS = ["W", "U", "B", "R", "G", "C"] as const;
 
 const TYPES = ["creature", "instant", "sorcery", "artifact", "enchantment",
                "planeswalker", "land", "battle"];
@@ -115,14 +109,14 @@ export default function RechercheCartes({
                className="min-w-56 flex-1" />
 
         <span className="flex gap-1">
-          {COULEURS.map((c) => (
-            <button key={c.code} onClick={() => basculerCouleur(c.code)}
-                    title={c.nom}
-                    className={`h-7 w-7 rounded-full border-2 text-[11px] font-bold transition ${
-                      couleurs.includes(c.code) ? "scale-110" : "opacity-45 hover:opacity-80"
-                    }`}
-                    style={{ background: c.teinte, borderColor: c.teinte, color: "#1b1b1b" }}>
-              {c.code}
+          {CODES_COULEURS.map((code) => (
+            <button key={code} onClick={() => basculerCouleur(code)} title={NOMS[code]}
+                    className={`rounded-full transition ${
+                      couleurs.includes(code)
+                        ? "scale-110 ring-2 ring-[var(--accent)]"
+                        : "opacity-45 hover:opacity-85"}`}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={symboleMana(code)} alt={NOMS[code]} width={26} height={26} className="block" />
             </button>
           ))}
         </span>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import TailleCartes from "./TailleCartes";
 
 export type CarteJeu = {
   uid: string; nom: string; image: string | null;
@@ -36,7 +37,7 @@ const estPermanent = (c: CarteJeu) =>
   !/instant|sorcery|ephemere|rituel/i.test(c.typeLigne);
 
 /** Cartes alignees par rangee avant de passer a la suivante. */
-const PAR_RANGEE = 9;
+const PAR_RANGEE = 12;
 
 /**
  * Place une carte automatiquement sur le champ de bataille.
@@ -51,8 +52,8 @@ function positionAuto(carte: CarteJeu, presentes: CarteJeu[]) {
   const colonne = rang % PAR_RANGEE;
   const ligne = Math.floor(rang / PAR_RANGEE);
   return {
-    x: 2 + colonne * 10.6,
-    y: terrain ? 52 + ligne * 16 : 4 + ligne * 16,
+    x: 1.5 + colonne * 7.6,
+    y: terrain ? 54 + ligne * 14 : 4 + ligne * 14,
   };
 }
 
@@ -248,6 +249,8 @@ export default function Playtest({
           {zones.bibliotheque.length} en bibliotheque · {zones.main.length} en main · {terrains} terrains
         </span>
 
+        <TailleCartes />
+
         <div className="ml-auto flex flex-wrap items-center gap-3">
           <Groupe titre="Tour">
             <button className={bouton} onClick={() => piocher(1)} title="Piocher une carte (D)">
@@ -372,7 +375,7 @@ export default function Playtest({
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={c.image} alt={c.nom}
                              className="rounded-[4.75%] border border-bordure shadow-xl"
-                             style={{ width: "var(--carte-l)" }} />
+                             style={{ width: "calc(var(--carte-l) * 0.78)" }} />
                       ) : <span className="block rounded border border-bordure p-2 text-xs">{c.nom}</span>}
                     </li>
                   ))}
@@ -477,10 +480,10 @@ function CarteSurChamp({
         <img src={carte.image} alt={carte.nom}
              className={`rounded-[4.75%] border shadow-2xl transition-shadow ${
                carte.engagee ? "border-accent brightness-90" : "border-bordure"}`}
-             style={{ width: "calc(var(--carte-l) * 0.85)" }} />
+             style={{ width: "calc(var(--carte-l) * 0.62)" }} />
       ) : (
         <span className="block rounded border border-accent bg-fond p-2 text-center text-[11px]"
-              style={{ width: "calc(var(--carte-l) * 0.85)" }}>
+              style={{ width: "calc(var(--carte-l) * 0.62)" }}>
           {carte.nom}
         </span>
       )}
@@ -637,7 +640,7 @@ function Pile({
               onContextMenu={(e) => { if (onMenu) { e.preventDefault(); e.stopPropagation(); onMenu(); } }}
               className={`relative block rounded-[4.75%] border transition hover:brightness-110 ${
                 accent ? "border-accent" : "border-bordure"}`}
-              style={{ width: "calc(var(--carte-l) * 0.8)", aspectRatio: "5 / 7",
+              style={{ width: "calc(var(--carte-l) * 0.62)", aspectRatio: "5 / 7",
                        boxShadow: nombre > 0 ? "3px 3px 0 var(--bordure), 6px 6px 0 var(--panneau)" : undefined,
                        background: "var(--fond)" }}>
         {nombre > 0 && (dos || apercu) && (

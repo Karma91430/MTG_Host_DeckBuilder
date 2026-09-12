@@ -51,7 +51,7 @@ export default async function PagePlaytest({ params }: { params: Promise<{ id: s
     .sort((a, b) => a.nom.localeCompare(b.nom));
 
   return (
-    <ThemeShell id={deck.theme} className="-mx-6 -my-8 min-h-screen bg-fond px-6 py-6">
+    <ThemeShell id={deck.theme} className="relative left-1/2 w-screen -translate-x-1/2 min-h-screen bg-fond px-6 py-6">
       <div className="mb-4 flex items-center gap-3">
         <h1 className="text-xl font-semibold">{deck.name}</h1>
         <span className="text-sm text-attenue">{bibliotheque.length} cartes</span>
