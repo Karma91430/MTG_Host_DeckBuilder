@@ -22,6 +22,10 @@ export type Carte = {
   card_faces?: { name: string; mana_cost?: string; oracle_text?: string; type_line?: string;
                  image_uris?: { small: string; normal: string; large: string; art_crop: string } }[];
   legalities: Record<string, string>;
+  /** Couleurs de mana que la carte peut produire, terrains et rampe compris. */
+  produced_mana?: string[];
+  /** Pieces liees : jetons crees, faces melees, cartes compagnons. */
+  all_parts?: { id: string; component: string; name: string; type_line?: string }[];
   prices?: Record<string, string | null>;
   scryfall_uri: string;
 };

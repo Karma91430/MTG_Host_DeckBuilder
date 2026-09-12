@@ -37,6 +37,19 @@ export default async function PagePlaytest({ params }: { params: Promise<{ id: s
     }
   }
 
+  // Jetons que le deck est susceptible de creer : Scryfall rattache a chaque
+  // carte les pieces liees, dont les jetons qu'elle produit.
+  const idsJetons = new Set<string>();
+  for (const c of donnees.values()) {
+    for (const part of c.all_parts ?? []) {
+      if (part.component === "token") idsJetons.add(part.id);
+    }
+  }
+  const cartesJetons = idsJetons.size > 0 ? await cartes([...idsJetons]) : new Map();
+  const jetons = [...cartesJetons.values()]
+    .map((c) => ({ nom: c.name, typeLigne: c.type_line, image: imageDe(c, "normal") }))
+    .sort((a, b) => a.nom.localeCompare(b.nom));
+
   return (
     <ThemeShell id={deck.theme} className="-mx-6 -my-8 min-h-screen bg-fond px-6 py-6">
       <div className="mb-4 flex items-center gap-3">
@@ -47,7 +60,7 @@ export default async function PagePlaytest({ params }: { params: Promise<{ id: s
           Retour a l&apos;edition
         </Link>
       </div>
-      <Playtest bibliotheque={bibliotheque} commandants={commandants} />
+      <Playtest bibliotheque={bibliotheque} commandants={commandants} jetons={jetons} />
     </ThemeShell>
   );
 }

@@ -12,6 +12,7 @@ import ListeDeck from "./ListeDeck";
 import ImportExport from "./ImportExport";
 import FicheCarte from "./FicheCarte";
 import MainDepart from "./MainDepart";
+import AnalyseMana from "./AnalyseMana";
 import EtatDeck from "./EtatDeck";
 import TailleCartes from "./TailleCartes";
 import ReglagesDeck from "./ReglagesDeck";
@@ -185,10 +186,11 @@ export default function EditeurDeck({
           )}
         </section>
 
-        <aside className="grid gap-4 lg:grid-cols-3">
+        <aside className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <Statistiques stats={stats} />
-          <EtatDeck entrees={entrees} problemes={problemes} />
+          <AnalyseMana entrees={entrees} />
           <MainDepart entrees={entrees} />
+          <EtatDeck entrees={entrees} problemes={problemes} />
         </aside>
       </div>
 

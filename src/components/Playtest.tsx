@@ -56,9 +56,15 @@ function positionAuto(carte: CarteJeu, presentes: CarteJeu[]) {
   };
 }
 
+export type JetonDispo = { nom: string; typeLigne: string; image: string | null };
+
+/** Dos de carte officiel, servi par Scryfall comme le reste des visuels. */
+const DOS_DE_CARTE =
+  "https://backs.scryfall.io/large/0/a/0aeebaf5-8c7d-4636-9e82-8c27447861f7.jpg";
+
 export default function Playtest({
-  bibliotheque: depart, commandants,
-}: { bibliotheque: CarteJeu[]; commandants: CarteJeu[] }) {
+  bibliotheque: depart, commandants, jetons = [],
+}: { bibliotheque: CarteJeu[]; commandants: CarteJeu[]; jetons?: JetonDispo[] }) {
   const [zones, setZones] = useState<Record<Zone, CarteJeu[]>>(() => ({
     bibliotheque: melanger(depart), main: [], terrain: [],
     cimetiere: [], exil: [], commandement: commandants,
@@ -70,6 +76,7 @@ export default function Playtest({
   const [survol, setSurvol] = useState<CarteJeu | null>(null);
   const [menu, setMenu] = useState<{ uid: string; zone: Zone; x: number; y: number } | null>(null);
   const [panneau, setPanneau] = useState<{ titre: string; cartes: CarteJeu[] } | null>(null);
+  const [menuPlateau, setMenuPlateau] = useState<{ x: number; y: number } | null>(null);
   const champ = useRef<HTMLDivElement>(null);
 
   const noter = useCallback((texte: string) => {
@@ -112,7 +119,7 @@ export default function Playtest({
   }, []);
 
   /**
-   * Joue une carte de la main : les permanents rejoignent le champ de bataille
+   * Joue une carte depuis la main ou la zone de commandement : les permanents rejoignent le champ de bataille
    * a une place calculee, les ephemeres et rituels partent au cimetiere comme
    * ils le feraient apres resolution.
    */
@@ -180,15 +187,19 @@ export default function Playtest({
     }));
   }, []);
 
-  const creerJeton = useCallback(() => {
-    const nom = window.prompt("Nom du jeton", "Jeton 1/1");
+  const creerJeton = useCallback((j?: JetonDispo) => {
+    const nom = j?.nom ?? window.prompt("Nom du jeton", "Jeton 1/1");
     if (!nom) return;
-    setZones((z) => ({
-      ...z,
-      terrain: [{ uid: `jeton-${Date.now()}`, nom, image: null, typeLigne: "Token",
-                  cmc: 0, engagee: false, jeton: true, x: 50, y: 50 }, ...z.terrain],
-    }));
+    setZones((z) => {
+      const carte: CarteJeu = {
+        uid: `jeton-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        nom, image: j?.image ?? null, typeLigne: j?.typeLigne ?? "Token",
+        cmc: 0, engagee: false, jeton: true,
+      };
+      return { ...z, terrain: [{ ...carte, ...positionAuto(carte, z.terrain) }, ...z.terrain] };
+    });
     noter(`cree ${nom}`);
+    setMenuPlateau(null);
   }, [noter]);
 
   // Raccourcis clavier : la souris seule rend le test fastidieux.
@@ -199,7 +210,7 @@ export default function Playtest({
         d: () => piocher(1), n: tourSuivant, u: degagerTout,
         m: () => { nouvelleMain(7); setMulligans((m) => m + 1); noter("mulligan"); },
         s: () => { setZones((z) => ({ ...z, bibliotheque: melanger(z.bibliotheque) })); noter("melange"); },
-        t: creerJeton,
+        t: () => creerJeton(),
         Escape: () => { setMenu(null); setPanneau(null); },
       };
       const f = touches[e.key];
@@ -225,7 +236,7 @@ export default function Playtest({
   }
 
   return (
-    <div className="space-y-3" onClick={() => setMenu(null)}>
+    <div className="space-y-3" onClick={() => { setMenu(null); setMenuPlateau(null); }}>
       <div className="flex flex-wrap items-center gap-2 rounded-lg border border-bordure bg-panneau p-2.5">
         <span className="text-sm">Tour <strong>{tour}</strong></span>
         <span className="flex items-center gap-1 rounded-md border border-bordure px-2 py-0.5">
@@ -270,7 +281,7 @@ export default function Playtest({
           </Groupe>
 
           <Groupe titre="Partie">
-            <button className={bouton} onClick={creerJeton} title="Creer un jeton (T)">
+            <button className={bouton} onClick={() => creerJeton()} title="Creer un jeton (T)">
               Jeton <kbd className="opacity-50">T</kbd>
             </button>
             <button className={bouton}
@@ -304,6 +315,8 @@ export default function Playtest({
           <div ref={champ}
                onDragOver={(e) => e.preventDefault()}
                onDrop={deposerSurChamp}
+               onContextMenu={(e) => { e.preventDefault();
+                                       setMenuPlateau({ x: e.clientX, y: e.clientY }); }}
                className="relative min-h-[30rem] overflow-hidden rounded-xl border border-bordure p-2"
                style={{ background:
                  "radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--accent) 7%, var(--panneau)) 0%, var(--fond) 75%)",
@@ -326,38 +339,67 @@ export default function Playtest({
             ))}
           </div>
 
-          <div className="rounded-xl border border-bordure p-2"
-               style={{ background:
-                 "linear-gradient(to top, color-mix(in srgb, var(--accent) 5%, var(--panneau)), var(--panneau))" }}
-               onDragOver={(e) => e.preventDefault()}
-               onDrop={(e) => { e.preventDefault();
-                                deplacer(e.dataTransfer.getData("text/plain"), "main"); }}>
-            <p className="mb-1 text-xs text-attenue">{LIBELLES.main} · {zones.main.length}</p>
-            {zones.main.length === 0 ? (
-              <p className="py-8 text-center text-sm text-attenue">Main vide</p>
-            ) : (
-              <ul className="flex flex-wrap justify-center pt-6">
-                {zones.main.map((c, i) => (
-                  <li key={c.uid} draggable
-                      onDragStart={(e) => e.dataTransfer.setData("text/plain", c.uid)}
-                      onMouseEnter={() => setSurvol(c)}
-                      onClick={() => jouer(c.uid)}
-                      title="Cliquer pour jouer, ou faire glisser pour placer soi-meme"
-                      onContextMenu={(e) => { e.preventDefault();
-                                              setMenu({ uid: c.uid, zone: "main", x: e.clientX, y: e.clientY }); }}
-                      className="-ml-8 cursor-grab transition-transform duration-150 first:ml-0
-                                 hover:z-20 hover:-translate-y-5 hover:rotate-0"
-                      style={{ zIndex: i, transform: `rotate(${(i - (zones.main.length - 1) / 2) * 2.5}deg)` }}>
-                    {c.image ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={c.image} alt={c.nom}
-                           className="rounded-[4.75%] border border-bordure shadow-xl"
-                           style={{ width: "var(--carte-l)" }} />
-                    ) : <span className="block rounded border border-bordure p-2 text-xs">{c.nom}</span>}
-                  </li>
-                ))}
-              </ul>
-            )}
+          <div className="flex items-end gap-3">
+            <Pile titre="Bibliotheque" nombre={zones.bibliotheque.length} dos
+                  onClic={() => piocher(1)}
+                  onMenu={() => setPanneau({ titre: "Bibliotheque", cartes: zones.bibliotheque })}
+                  onDepot={(uid) => deplacer(uid, "bibliotheque")}
+                  aide="Cliquer pour piocher · clic droit pour parcourir" />
+
+            <div className="min-w-0 flex-1 rounded-xl border border-bordure p-2"
+                 style={{ background:
+                   "linear-gradient(to top, color-mix(in srgb, var(--accent) 5%, var(--panneau)), var(--panneau))" }}
+                 onDragOver={(e) => e.preventDefault()}
+                 onDrop={(e) => { e.preventDefault();
+                                  deplacer(e.dataTransfer.getData("text/plain"), "main"); }}>
+              <p className="mb-1 text-xs text-attenue">{LIBELLES.main} · {zones.main.length}</p>
+              {zones.main.length === 0 ? (
+                <p className="py-8 text-center text-sm text-attenue">Main vide</p>
+              ) : (
+                <ul className="flex flex-wrap justify-center pt-6">
+                  {zones.main.map((c, i) => (
+                    <li key={c.uid} draggable
+                        onDragStart={(e) => e.dataTransfer.setData("text/plain", c.uid)}
+                        onMouseEnter={() => setSurvol(c)}
+                        onClick={() => jouer(c.uid)}
+                        title="Cliquer pour jouer, ou faire glisser pour placer soi-meme"
+                        onContextMenu={(e) => { e.preventDefault(); e.stopPropagation();
+                                                setMenu({ uid: c.uid, zone: "main", x: e.clientX, y: e.clientY }); }}
+                        className="-ml-8 cursor-grab transition-transform duration-150 first:ml-0
+                                   hover:z-20 hover:-translate-y-5 hover:rotate-0"
+                        style={{ zIndex: i, transform: `rotate(${(i - (zones.main.length - 1) / 2) * 2.5}deg)` }}>
+                      {c.image ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={c.image} alt={c.nom}
+                             className="rounded-[4.75%] border border-bordure shadow-xl"
+                             style={{ width: "var(--carte-l)" }} />
+                      ) : <span className="block rounded border border-bordure p-2 text-xs">{c.nom}</span>}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div className="flex gap-2">
+              {(["cimetiere", "exil"] as Zone[]).map((z) => (
+                <Pile key={z} titre={LIBELLES[z]} nombre={zones[z].length}
+                      apercu={zones[z][0]?.image ?? null}
+                      onClic={() => zones[z].length > 0 && setPanneau({ titre: LIBELLES[z], cartes: zones[z] })}
+                      onDepot={(uid) => deplacer(uid, z)}
+                      aide="Faire glisser une carte ici pour l'y envoyer" />
+              ))}
+              {/* La zone de commandement est mise en avant : le commandant y
+                  retourne sans cesse et doit pouvoir etre relance d'un clic. */}
+              <Pile titre="Commandement" nombre={zones.commandement.length}
+                    apercu={zones.commandement[0]?.image ?? null}
+                    accent
+                    onClic={() => { const c = zones.commandement[0];
+                                    if (c) jouer(c.uid); }}
+                    onMenu={() => zones.commandement.length > 0 &&
+                            setPanneau({ titre: "Commandement", cartes: zones.commandement })}
+                    onDepot={(uid) => deplacer(uid, "commandement")}
+                    aide="Cliquer pour lancer le commandant · y faire glisser une carte pour l'y renvoyer" />
+            </div>
           </div>
         </div>
 
@@ -367,24 +409,6 @@ export default function Playtest({
             <img src={survol.image} alt={survol.nom}
                  className="w-full rounded-[4.75%] border border-bordure" />
           )}
-
-          {(["bibliotheque", "cimetiere", "exil", "commandement"] as Zone[]).map((z) => (
-            <div key={z}
-                 onDragOver={(e) => e.preventDefault()}
-                 onDrop={(e) => { e.preventDefault();
-                                  deplacer(e.dataTransfer.getData("text/plain"), z); }}
-                 onClick={() => zones[z].length > 0 &&
-                          setPanneau({ titre: LIBELLES[z], cartes: zones[z] })}
-                 className="relative flex cursor-pointer items-center gap-2 rounded-lg border
-                            border-bordure bg-panneau px-3 py-2 text-sm transition hover:brightness-125"
-                 style={{ boxShadow: zones[z].length > 0
-                   ? "2px 2px 0 var(--bordure), 4px 4px 0 var(--panneau)" : undefined }}>
-              <span className="flex-1">{LIBELLES[z]}</span>
-              <span className={zones[z].length > 0 ? "font-semibold text-accent" : "text-attenue"}>
-                {zones[z].length}
-              </span>
-            </div>
-          ))}
 
           <div className="rounded-xl border border-bordure p-2"
                style={{ background:
@@ -397,6 +421,16 @@ export default function Playtest({
           </div>
         </aside>
       </div>
+
+      {menuPlateau && (
+        <MenuPlateau x={menuPlateau.x} y={menuPlateau.y} jetons={jetons}
+                     onTourSuivant={() => { tourSuivant(); setMenuPlateau(null); }}
+                     onDegager={() => { degagerTout(); setMenuPlateau(null); }}
+                     onMelanger={() => { setZones((z) => ({ ...z, bibliotheque: melanger(z.bibliotheque) }));
+                                         noter("melange"); setMenuPlateau(null); }}
+                     onJeton={creerJeton}
+                     onFermer={() => setMenuPlateau(null)} />
+      )}
 
       {menu && (
         <MenuCarte menu={menu} onDeplacer={deplacer} onMarqueur={marqueur}
@@ -528,6 +562,97 @@ function PanneauZone({
           ))}
         </ul>
       </div>
+    </div>
+  );
+}
+
+
+/** Actions generales, au clic droit sur le plateau. */
+function MenuPlateau({
+  x, y, jetons, onTourSuivant, onDegager, onMelanger, onJeton, onFermer,
+}: {
+  x: number; y: number; jetons: JetonDispo[];
+  onTourSuivant: () => void; onDegager: () => void; onMelanger: () => void;
+  onJeton: (j?: JetonDispo) => void; onFermer: () => void;
+}) {
+  return (
+    <div className="fixed z-50 min-w-52 rounded-md border border-bordure bg-panneau py-1 shadow-2xl"
+         style={{ left: x, top: y }} onClick={(e) => e.stopPropagation()}>
+      <button onClick={onTourSuivant} className="block w-full px-3 py-1.5 text-left text-xs hover:text-accent">
+        Passer le tour
+      </button>
+      <button onClick={onDegager} className="block w-full px-3 py-1.5 text-left text-xs hover:text-accent">
+        Degager tous les permanents
+      </button>
+      <button onClick={onMelanger} className="block w-full px-3 py-1.5 text-left text-xs hover:text-accent">
+        Melanger la bibliotheque
+      </button>
+
+      <div className="mt-1 border-t border-bordure pt-1">
+        <p className="px-3 py-1 text-[10px] uppercase tracking-wide text-attenue">
+          Jetons {jetons.length > 0 && `du deck (${jetons.length})`}
+        </p>
+        {/* Les jetons proposes sont ceux que les cartes du deck peuvent creer,
+            d'apres les pieces liees renseignees par Scryfall. */}
+        <div className="max-h-48 overflow-y-auto">
+          {jetons.map((j) => (
+            <button key={j.nom} onClick={() => onJeton(j)}
+                    className="block w-full truncate px-3 py-1 text-left text-xs hover:text-accent"
+                    title={j.typeLigne}>
+              {j.nom}
+            </button>
+          ))}
+          {jetons.length === 0 && (
+            <p className="px-3 py-1 text-xs text-attenue">Aucun detecte dans ce deck.</p>
+          )}
+        </div>
+        <button onClick={() => onJeton()} onMouseDown={onFermer}
+                className="block w-full px-3 py-1.5 text-left text-xs text-attenue hover:text-accent">
+          Jeton personnalise...
+        </button>
+      </div>
+    </div>
+  );
+}
+
+
+/**
+ * Pile de cartes posee sur la table.
+ *
+ * La bibliotheque montre un dos de carte, les autres zones la carte du dessus.
+ * Chaque pile accepte qu'on y fasse glisser une carte depuis le plateau.
+ */
+function Pile({
+  titre, nombre, dos = false, apercu = null, accent = false, onClic, onMenu, onDepot, aide,
+}: {
+  titre: string; nombre: number; dos?: boolean; apercu?: string | null; accent?: boolean;
+  onClic: () => void; onMenu?: () => void;
+  onDepot: (uid: string) => void; aide: string;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-1"
+         onDragOver={(e) => e.preventDefault()}
+         onDrop={(e) => { e.preventDefault(); onDepot(e.dataTransfer.getData("text/plain")); }}>
+      <button onClick={onClic} title={aide}
+              onContextMenu={(e) => { if (onMenu) { e.preventDefault(); e.stopPropagation(); onMenu(); } }}
+              className={`relative block rounded-[4.75%] border transition hover:brightness-110 ${
+                accent ? "border-accent" : "border-bordure"}`}
+              style={{ width: "calc(var(--carte-l) * 0.8)", aspectRatio: "5 / 7",
+                       boxShadow: nombre > 0 ? "3px 3px 0 var(--bordure), 6px 6px 0 var(--panneau)" : undefined,
+                       background: "var(--fond)" }}>
+        {nombre > 0 && (dos || apercu) && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={dos ? DOS_DE_CARTE : (apercu as string)} alt=""
+               className="h-full w-full rounded-[4.75%] object-cover" />
+        )}
+        <span className="absolute inset-x-0 bottom-0 rounded-b-[4.75%] bg-black/75 py-0.5
+                         text-center text-xs font-semibold text-white">
+          {nombre}
+        </span>
+      </button>
+      <span className={`text-[10px] uppercase tracking-wide ${accent ? "text-accent" : "text-attenue"}`}>
+        {titre}
+      </span>
     </div>
   );
 }
