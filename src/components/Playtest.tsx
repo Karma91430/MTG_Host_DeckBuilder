@@ -181,11 +181,10 @@ export default function Playtest({
     <div className="space-y-3" onClick={() => setMenu(null)}>
       <div className="flex flex-wrap items-center gap-2 rounded-lg border border-bordure bg-panneau p-2.5">
         <span className="text-sm">Tour <strong>{tour}</strong></span>
-        <span className="flex items-center gap-1 text-sm">
-          Vies
-          <button onClick={() => setVies((v) => v - 1)} className="px-1 text-attenue">−</button>
-          <strong className="w-7 text-center">{vies}</strong>
-          <button onClick={() => setVies((v) => v + 1)} className="px-1 text-attenue">+</button>
+        <span className="flex items-center gap-1 rounded-md border border-bordure px-2 py-0.5">
+          <button onClick={() => setVies((v) => v - 1)} className="px-1.5 text-attenue hover:text-red-400">−</button>
+          <strong className="w-9 text-center text-lg" style={{ color: "var(--accent)" }}>{vies}</strong>
+          <button onClick={() => setVies((v) => v + 1)} className="px-1.5 text-attenue hover:text-texte">+</button>
         </span>
         <span className="text-xs text-attenue">
           {zones.bibliotheque.length} en bibliotheque · {zones.main.length} en main · {terrains} terrains
@@ -224,7 +223,10 @@ export default function Playtest({
           <div ref={champ}
                onDragOver={(e) => e.preventDefault()}
                onDrop={deposerSurChamp}
-               className="relative min-h-[26rem] rounded-lg border border-bordure bg-panneau p-2">
+               className="relative min-h-[30rem] overflow-hidden rounded-xl border border-bordure p-2"
+               style={{ background:
+                 "radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--accent) 7%, var(--panneau)) 0%, var(--fond) 75%)",
+                 boxShadow: "inset 0 0 80px rgba(0,0,0,.45)" }}>
             <span className="pointer-events-none absolute left-3 top-2 text-xs text-attenue">
               {LIBELLES.terrain} · {zones.terrain.length}
             </span>
@@ -243,7 +245,9 @@ export default function Playtest({
             ))}
           </div>
 
-          <div className="rounded-lg border border-bordure bg-panneau p-2"
+          <div className="rounded-xl border border-bordure p-2"
+               style={{ background:
+                 "linear-gradient(to top, color-mix(in srgb, var(--accent) 5%, var(--panneau)), var(--panneau))" }}
                onDragOver={(e) => e.preventDefault()}
                onDrop={(e) => { e.preventDefault();
                                 deplacer(e.dataTransfer.getData("text/plain"), "main"); }}>
@@ -251,17 +255,20 @@ export default function Playtest({
             {zones.main.length === 0 ? (
               <p className="py-8 text-center text-sm text-attenue">Main vide</p>
             ) : (
-              <ul className="flex flex-wrap gap-2">
-                {zones.main.map((c) => (
+              <ul className="flex flex-wrap justify-center pt-6">
+                {zones.main.map((c, i) => (
                   <li key={c.uid} draggable
                       onDragStart={(e) => e.dataTransfer.setData("text/plain", c.uid)}
                       onMouseEnter={() => setSurvol(c)}
                       onContextMenu={(e) => { e.preventDefault();
                                               setMenu({ uid: c.uid, zone: "main", x: e.clientX, y: e.clientY }); }}
-                      className="cursor-grab transition-transform hover:-translate-y-2">
+                      className="-ml-8 cursor-grab transition-transform duration-150 first:ml-0
+                                 hover:z-20 hover:-translate-y-5 hover:rotate-0"
+                      style={{ zIndex: i, transform: `rotate(${(i - (zones.main.length - 1) / 2) * 2.5}deg)` }}>
                     {c.image ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={c.image} alt={c.nom} className="rounded-[4.75%] border border-bordure"
+                      <img src={c.image} alt={c.nom}
+                           className="rounded-[4.75%] border border-bordure shadow-xl"
                            style={{ width: "var(--carte-l)" }} />
                     ) : <span className="block rounded border border-bordure p-2 text-xs">{c.nom}</span>}
                   </li>
@@ -285,14 +292,20 @@ export default function Playtest({
                                   deplacer(e.dataTransfer.getData("text/plain"), z); }}
                  onClick={() => zones[z].length > 0 &&
                           setPanneau({ titre: LIBELLES[z], cartes: zones[z] })}
-                 className="flex cursor-pointer items-center gap-2 rounded-lg border border-bordure
-                            bg-panneau px-3 py-2 text-sm hover:brightness-125">
+                 className="relative flex cursor-pointer items-center gap-2 rounded-lg border
+                            border-bordure bg-panneau px-3 py-2 text-sm transition hover:brightness-125"
+                 style={{ boxShadow: zones[z].length > 0
+                   ? "2px 2px 0 var(--bordure), 4px 4px 0 var(--panneau)" : undefined }}>
               <span className="flex-1">{LIBELLES[z]}</span>
-              <span className="text-attenue">{zones[z].length}</span>
+              <span className={zones[z].length > 0 ? "font-semibold text-accent" : "text-attenue"}>
+                {zones[z].length}
+              </span>
             </div>
           ))}
 
-          <div className="rounded-lg border border-bordure bg-panneau p-2">
+          <div className="rounded-xl border border-bordure p-2"
+               style={{ background:
+                 "linear-gradient(to top, color-mix(in srgb, var(--accent) 5%, var(--panneau)), var(--panneau))" }}>
             <p className="mb-1 text-xs font-medium">Journal</p>
             <ul className="max-h-48 space-y-0.5 overflow-y-auto text-[11px] text-attenue">
               {journal.length === 0 ? <li>Rien pour l&apos;instant.</li>
@@ -335,8 +348,8 @@ function CarteSurChamp({
       {carte.image ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={carte.image} alt={carte.nom}
-             className={`rounded-[4.75%] border shadow-lg ${
-               carte.engagee ? "border-accent" : "border-bordure"}`}
+             className={`rounded-[4.75%] border shadow-2xl transition-shadow ${
+               carte.engagee ? "border-accent brightness-90" : "border-bordure"}`}
              style={{ width: "calc(var(--carte-l) * 0.85)" }} />
       ) : (
         <span className="block rounded border border-accent bg-fond p-2 text-center text-[11px]"

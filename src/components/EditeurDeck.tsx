@@ -13,7 +13,6 @@ import ImportExport from "./ImportExport";
 import FicheCarte from "./FicheCarte";
 import MainDepart from "./MainDepart";
 import Acquisition from "./Acquisition";
-import Paquets from "./Paquets";
 import TailleCartes from "./TailleCartes";
 import ReglagesDeck from "./ReglagesDeck";
 
@@ -29,6 +28,7 @@ export default function EditeurDeck({
   const [apercu, setApercu] = useState<EntreeResolue | null>(null);
   const [fiche, setFiche] = useState<EntreeResolue | null>(null);
   const [histo, setHisto] = useState({ peutAnnuler: false, peutRetablir: false });
+  const [rechercheOuverte, setRechercheOuverte] = useState(true);
 
   // L'etat des boutons suit le contenu : chaque modification rafraichit la page,
   // donc reinterroger ici suffit a les tenir a jour.
@@ -130,8 +130,6 @@ export default function EditeurDeck({
                       title="Retablir" className="border-l border-bordure px-3 py-2 text-sm disabled:opacity-30">↷</button>
             </span>
             <ImportExport deckId={deck.id} />
-            <Paquets deckId={deck.id}
-                     categories={[...new Set(entrees.map((e) => e.category).filter(Boolean))].sort()} />
             <ReglagesDeck deckId={deck.id} folder={deck.folder} tags={deck.tags} />
             <Link href={`/decks/${deck.id}/playtest`}
                   className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-texte">
@@ -144,12 +142,15 @@ export default function EditeurDeck({
         </div>
       </header>
 
-      <div className="grid gap-6 xl:grid-cols-[20rem_minmax(0,1fr)_17rem]">
-        <section className="space-y-3">
-          <h2 className="text-sm font-medium">Ajouter des cartes</h2>
-          <RechercheCartes onAjouter={ajouter} />
-        </section>
+      <div className="mb-4">
+        <button onClick={() => setRechercheOuverte((v) => !v)}
+                className="mb-2 rounded-md border border-bordure bg-panneau px-3 py-1.5 text-sm">
+          {rechercheOuverte ? "Masquer la recherche" : "Ajouter des cartes"}
+        </button>
+        {rechercheOuverte && <RechercheCartes format={deck.format} onAjouter={ajouter} />}
+      </div>
 
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_17rem]">
         <section className={occupe ? "opacity-60" : ""}>
           <ListeDeck entrees={entrees} onModifier={modifier} onSurvol={setApercu}
                      onOuvrir={setFiche} />
