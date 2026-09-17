@@ -64,14 +64,15 @@ const DOS_DE_CARTE =
   "https://backs.scryfall.io/large/0/a/0aeebaf5-8c7d-4636-9e82-8c27447861f7.jpg";
 
 export default function Playtest({
-  bibliotheque: depart, commandants, jetons = [],
-}: { bibliotheque: CarteJeu[]; commandants: CarteJeu[]; jetons?: JetonDispo[] }) {
+  bibliotheque: depart, commandants, jetons = [], viesDepart = 20,
+}: { bibliotheque: CarteJeu[]; commandants: CarteJeu[]; jetons?: JetonDispo[];
+     viesDepart?: number }) {
   const [zones, setZones] = useState<Record<Zone, CarteJeu[]>>(() => ({
     bibliotheque: melanger(depart), main: [], terrain: [],
     cimetiere: [], exil: [], commandement: commandants,
   }));
   const [tour, setTour] = useState(1);
-  const [vies, setVies] = useState(commandants.length > 0 ? 40 : 20);
+  const [vies, setVies] = useState(viesDepart);
   const [mulligans, setMulligans] = useState(0);
   const [menu, setMenu] = useState<{ uid: string; zone: Zone; x: number; y: number } | null>(null);
   const [panneau, setPanneau] = useState<{ titre: string; cartes: CarteJeu[] } | null>(null);

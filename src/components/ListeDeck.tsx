@@ -9,14 +9,25 @@ import ColonnesDeck from "./ColonnesDeck";
 type Affichage = "colonnes" | "grille" | "liste";
 type Groupement = "type" | "categorie";
 
-const ORDRE_TYPES = ["Commandant", "Creatures", "Planeswalkers", "Ephemeres", "Rituels",
-                     "Artefacts", "Enchantements", "Batailles", "Terrains", "Autres"];
+const ORDRE_TYPES = ["Oathbreaker", "Sort fetiche", "Commandant", "Creatures", "Planeswalkers",
+                     "Ephemeres", "Rituels", "Artefacts", "Enchantements", "Batailles",
+                     "Terrains", "Autres"];
 const SANS = "Sans categorie";
 
+/** Intitule d'une carte en zone de commandement, selon le format. */
+function intituleCommandement(e: EntreeResolue, format: string): string {
+  if (format !== "oathbreaker") return "Commandant";
+  if (/planeswalker/i.test(e.carte.type_line || "")) return "Oathbreaker";
+  if (/instant|sorcery/i.test(e.carte.type_line || "")) return "Sort fetiche";
+  return "Commandant";
+}
+
+
 export default function ListeDeck({
-  entrees, onModifier, onSurvol, onOuvrir,
+  entrees, onModifier, onSurvol, onOuvrir, format = "commander",
 }: {
   entrees: EntreeResolue[];
+  format?: string;
   onModifier: (entryId: string, champs: Record<string, unknown>) => void;
   onSurvol: (e: EntreeResolue | null) => void;
   onOuvrir: (e: EntreeResolue) => void;
@@ -31,8 +42,13 @@ export default function ListeDeck({
   // Identite couleur du commandant : sert au filtre des cartes non jouables.
   const identite = useMemo(() => {
     const c = entrees.filter((e) => e.zone === "command");
-    return c.length ? new Set(c.flatMap((e) => e.carte.color_identity ?? [])) : null;
-  }, [entrees]);
+    if (c.length === 0) return null;
+    const porteurs = format === "oathbreaker"
+      ? c.filter((e) => /planeswalker/i.test(e.carte.type_line || ""))
+      : c;
+    return new Set((porteurs.length > 0 ? porteurs : c)
+      .flatMap((e) => e.carte.color_identity ?? []));
+  }, [entrees, format]);
 
   const categoriesConnues = useMemo(() => {
     const utilisees = entrees.map((e) => e.category).filter(Boolean);
@@ -67,7 +83,7 @@ export default function ListeDeck({
   const groupes = useMemo(() => {
     const g = new Map<string, EntreeResolue[]>();
     for (const e of filtrees) {
-      const cle = e.zone === "command" ? "Commandant"
+      const cle = e.zone === "command" ? intituleCommandement(e, format)
         : groupement === "categorie" ? (e.category || SANS)
         : categorieType(e.carte);
       if (!g.has(cle)) g.set(cle, []);
@@ -84,7 +100,7 @@ export default function ListeDeck({
       if (b[0] === SANS) return -1;
       return a[0].localeCompare(b[0]);
     });
-  }, [filtrees, groupement]);
+  }, [filtrees, groupement, format]);
 
   const total = filtrees.reduce((s, e) => s + e.quantity, 0);
   const filtreActif = Boolean(filtreTexte || filtreSousType || horsIdentite);

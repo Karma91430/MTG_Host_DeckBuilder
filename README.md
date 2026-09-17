@@ -18,6 +18,25 @@ Trois zones d accueil pour une carte : le deck, la zone de commandement, ou une
 liste « a voir » pour ce qu on hesite a inclure. Une carte n appartient qu a une
 seule zone : l y rajouter ailleurs la deplace au lieu de la dupliquer.
 
+### Formats
+
+Commander, Standard, Modern, Pioneer, Legacy, Pauper, Brawl et **Oathbreaker**.
+
+Oathbreaker demande un traitement particulier : la zone de commandement y porte
+deux cartes, un planeswalker et son sort fetiche -- un ephemere ou un rituel.
+Le deck fait soixante cartes, elles comprises, a exemplaire unique, et la partie
+commence a vingt points de vie plutot que quarante.
+
+Les controles verifient ce que le format a de propre : un seul planeswalker, un
+seul sort fetiche, rien d autre en commandement, et un sort fetiche qui tient
+dans l identite couleur du planeswalker -- c est lui seul qui donne ses couleurs
+au deck, le sort n en ajoute aucune. La liste separe les deux sous leurs propres
+intitules, et le playtest ajuste les points de vie de depart.
+
+Scryfall publiant la legalite Oathbreaker carte par carte, la verification et le
+filtrage des recherches n ont demande aucun travail supplementaire. Utile :
+plusieurs cartes autorisees en Commander ne le sont pas ici, Sol Ring le premier.
+
 ### Choix de l edition
 
 Chaque carte existe souvent en dix tirages : edition d origine, reimpression,

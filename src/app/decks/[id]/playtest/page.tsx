@@ -4,6 +4,7 @@ import { db, type DeckRow, type DeckCardRow } from "@/lib/db";
 import { cartes, imageDe } from "@/lib/scryfall";
 import ThemeShell from "@/components/ThemeShell";
 import Playtest, { type CarteJeu } from "@/components/Playtest";
+import { VIES_DEPART } from "@/lib/deck";
 
 export const dynamic = "force-dynamic";
 
@@ -63,7 +64,8 @@ export default async function PagePlaytest({ params }: { params: Promise<{ id: s
           Retour a l&apos;edition
         </Link>
       </div>
-      <Playtest bibliotheque={bibliotheque} commandants={commandants} jetons={jetons} />
+      <Playtest bibliotheque={bibliotheque} commandants={commandants} jetons={jetons}
+                viesDepart={VIES_DEPART[deck.format] ?? 20} />
     </ThemeShell>
   );
 }

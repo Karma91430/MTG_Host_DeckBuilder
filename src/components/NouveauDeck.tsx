@@ -4,7 +4,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { THEMES, symboleExtension } from "@/lib/themes";
 
-const FORMATS = ["commander", "standard", "modern", "pioneer", "legacy", "pauper", "brawl"];
+const FORMATS = ["commander", "oathbreaker", "standard", "modern", "pioneer",
+                 "legacy", "pauper", "brawl"];
 
 export default function NouveauDeck() {
   const router = useRouter();

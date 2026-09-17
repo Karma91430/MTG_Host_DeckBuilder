@@ -156,7 +156,7 @@ export default function EditeurDeck({
       <div className="space-y-6">
         <section className={occupe ? "opacity-60" : ""}>
           <ListeDeck entrees={entrees} onModifier={modifier} onSurvol={setApercu}
-                     onOuvrir={setFiche} />
+                     onOuvrir={setFiche} format={deck.format} />
 
           {aVoir.length > 0 && (
             <div className="mt-4">

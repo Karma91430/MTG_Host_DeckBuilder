@@ -10,3 +10,7 @@ docker-compose.yml
 
 # Cache du compilateur TypeScript en mode incremental.
 tsconfig.tsbuildinfo
+
+# Copies conflictuelles laissees par iCloud.
+*[0-9]/
+node_modules*
