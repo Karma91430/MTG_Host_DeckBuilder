@@ -11,8 +11,17 @@ export default async function Accueil() {
     SELECT d.id, d.name, d.format, d.theme, d.folder, d.tags, d.updated_at,
            (SELECT COALESCE(SUM(quantity),0) FROM deck_cards c
              WHERE c.deck_id = d.id AND c.zone IN ('main','command')) AS cartes,
+           -- Le visuel du deck vient de la carte qui lui donne son visage. En
+           -- Oathbreaker la zone de commandement en porte deux : on ecarte le
+           -- sort fetiche pour garder le planeswalker.
            (SELECT c.card_id FROM deck_cards c
-             WHERE c.deck_id = d.id AND c.zone = 'command' LIMIT 1) AS commandantId
+             LEFT JOIN card_cache cc ON cc.id = c.card_id
+             WHERE c.deck_id = d.id AND c.zone = 'command'
+             ORDER BY (COALESCE(json_extract(cc.payload, '$.type_line'), '')
+                       LIKE '%Instant%'
+                       OR COALESCE(json_extract(cc.payload, '$.type_line'), '')
+                       LIKE '%Sorcery%') ASC
+             LIMIT 1) AS commandantId
     FROM decks d ORDER BY d.updated_at DESC
   `).all() as Ligne[];
 
